@@ -19,6 +19,7 @@ def build_gridworld_from_char_matrix(
   seed=2017,
   gamma=1,
   skip_checks=False,
+  terminal_states=None,
   transition_matrix_builder_cls=TransitionMatrixBuilder):
     """
     A parser to build a gridworld from a text file.
@@ -68,6 +69,42 @@ def build_gridworld_from_char_matrix(
     R = create_reward_matrix(P.shape[0], grid_size, reward_spec, action_space=4)
     p0 = flatten_state(start_loc, grid_size, R.shape[0])
 
-    gw = GridWorldMDP(P, R, gamma, p0, terminal_states=reward_spec.keys(),
-                      size=grid_size, seed=seed)
+    if terminal_states is None:
+        terminal_states = reward_spec.keys()
+
+    gw = GridWorldMDP(P, R, gamma, p0, terminal_states=terminal_states, size=grid_size, seed=seed)
     return gw, wall_locs
+
+def ascii_to_walls(char_matrix):
+    """
+    A parser to build a gridworld from a text file.
+    Each grid has ONE start and goal location.
+    A reward of +1 is positioned at the goal location.
+    :param char_matrix: Matrix of characters.
+    :param p_success: Probability that the action is successful.
+    :param seed: The seed for the GridWorldMDP object.
+    :param skip_checks: Skips assertion checks.
+    :transition_matrix_builder_cls: The transition matrix builder to use.
+    :return:
+    """
+    grid_size = len(char_matrix[0])
+
+    assert(len(char_matrix) == grid_size), 'Mismatch in the columns.'
+    for row in char_matrix:
+        assert(len(row) == grid_size), 'Mismatch in the rows.'
+    # ...
+    wall_locs = []
+    empty = []
+    start_loc = None
+    goal_loc = None
+    for r in range(grid_size):
+        for c in range(grid_size):
+            char = char_matrix[r][c]
+            if char == '#':
+                wall_locs.append((r, c))
+            elif char == ' ':
+                empty.append((r, c))
+            else:
+                raise ValueError('Unknown character {} in grid.'.format(char))
+    # Attempt to make the desired gridworld.
+    return wall_locs, empty

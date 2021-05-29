@@ -1,7 +1,7 @@
 import numpy as np
 from emdp import actions
 from emdp.gridworld.helper_utilities import build_simple_grid, check_can_take_action
-from emdp.gridworld.txt_utilities import get_char_matrix, build_gridworld_from_char_matrix
+from emdp.gridworld.txt_utilities import get_char_matrix, ascii_to_walls
 from emdp.gridworld.env import GridWorldMDP
 from emdp.common import MDP
 
@@ -101,6 +101,4 @@ _EXAMPLE_FOUR_ROOMS_TXT = """#############
 
 def build_four_rooms_example(gamma=0.99, seed=2017):
     char_matrix = get_char_matrix(_EXAMPLE_FOUR_ROOMS_TXT)
-    return build_gridworld_from_char_matrix(char_matrix, seed=seed, gamma=gamma)
-
-
+    return ascii_to_walls(char_matrix, seed=seed, gamma=gamma)
