@@ -17,7 +17,7 @@ def test_build_chain_MDP():
     assert np.allclose(mdp.P[2][1], np.array([0, 0, 1])), 'taking the action RIGHT from state 2 should go to state 2 with prob 1'
     assert np.allclose(mdp.P[2][0], np.array([0, 0.9, 0.1])), 'taking the action LEFT from state 2 should go to state 1 with prob 0.9'
 
-    assert np.allclose(mdp.R[0][:], 0), 'No reward from terminal state'
-    assert mdp.R[1][0] == +5, 'taking LEFT from state 1 should give +5 reward'
-    assert mdp.R[1][1] == 0, 'taking RIGHT from state 1 should give 0 reward'
-    assert np.allclose(mdp.R[2][:], 0), 'No reward from other states'
+    assert np.allclose(mdp.reward[0][:], 0), 'No reward from terminal state'
+    assert mdp.reward[1][0] == +5, 'taking LEFT from state 1 should give +5 reward'
+    assert mdp.reward[1][1] == 0, 'taking RIGHT from state 1 should give 0 reward'
+    assert np.allclose(mdp.reward[2][:], 0), 'No reward from other states'

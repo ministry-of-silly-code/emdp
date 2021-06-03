@@ -15,11 +15,11 @@ def test_V_pi():
     """Check if computation works."""
     mdp = build_SB_example35()
 
-    print(mdp.R)
+    print(mdp.reward)
     # random policy:
     policy = np.ones((mdp.P.shape[0], mdp.P.shape[1]))/mdp.P.shape[1]
     policy = torch.from_numpy(policy).float()
-    V_pi = calculate_V_pi(mdp.P, mdp.R, policy, mdp.gamma).detach().numpy()
+    V_pi = calculate_V_pi(mdp.P, mdp.reward, policy, mdp.discount).detach().numpy()
 
     assert np.allclose(np.round(V_pi, 1), np.array([3.3, 8.8, 4.4, 5.3, 1.5,
                                        1.5, 3.0, 2.3, 1.9, 0.5,
@@ -31,14 +31,13 @@ def test_V_pi():
 def test_differentiable():
     mdp = build_SB_example35()
 
-    print(mdp.R)
+    print(mdp.reward)
     # random policy:
     policy = np.ones((mdp.P.shape[0], mdp.P.shape[1]))/mdp.P.shape[1]
     policy = torch.tensor(policy, requires_grad=True).float()
-    V_pi = calculate_V_pi(mdp.P, mdp.R, policy, mdp.gamma)
+    V_pi = calculate_V_pi(mdp.P, mdp.reward, policy, mdp.discount)
     grads = torch.autograd.grad(V_pi.mean(), [policy])
     assert grads is not None
     for grad in grads:
         assert torch.isfinite(grad).all()
         assert not torch.equal(grad, torch.tensor(0.0))
-

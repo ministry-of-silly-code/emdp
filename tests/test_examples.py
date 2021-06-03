@@ -66,7 +66,7 @@ def test_four_minima_env():
     assert reward_spec[(0, 2)] == 1*(1.5)
     assert reward_spec[(2, 4)] == 0.5
     assert reward_spec[(4, 2)] == 1
-    assert world.p0.argmax() == 12 # Middle of the array.
+    assert world.initial_state.argmax() == 12 # Middle of the array.
 
 def test_cakeworld_mdp():
     """Numerical test for cake world mdp.
@@ -80,7 +80,7 @@ def test_cakeworld_mdp():
     eval_policy = np.array([[0.5, 0.5], [0.5, 0.5]])
 
     calc_v_pi = analytic.calculate_V_pi(
-        built_mdp.P, built_mdp.R, eval_policy, built_mdp.gamma)
+        built_mdp.P, built_mdp.reward, eval_policy, built_mdp.discount)
 
     # Value of "Bad State" is independent of policy.
     expected_value = -2.0 * (1 + epsilon) / discount

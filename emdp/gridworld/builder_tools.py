@@ -131,6 +131,8 @@ class TransitionMatrixBuilder(object):
             self.add_wall_at(tuple(my_location))
 
 
+
+
 def create_reward_matrix(state_space, size, reward_spec, action_space=4):
     """
     Abstraction to create reward matrices.

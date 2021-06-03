@@ -29,6 +29,5 @@ def build_imani_counterexample():
     R[2, 0] = 0
     R[2, 1] = 1
 
-    return MDP(P, R, gamma, p0=np.array([1, 0, 0, 0]), terminal_states=[3])
+    return MDP(P, R, gamma, initial_state=np.array([1, 0, 0, 0]), terminal_states=[3])
     pass
-

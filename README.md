@@ -168,11 +168,11 @@ builder.add_wall_between((1,1), (1, 3))
 You can access transition dynamics by inspecting the `MDP` object:
 
 ```python
-mdp.P # transition matrix
-mdp.R # reward matrix
-mdp.p0 # starting distribution
-mdp.gamma # discount factor
-mdp.terminal_states # the location of the terminal states
+mdp.P  # transition matrix
+mdp.reward  # reward matrix
+mdp.initial_state  # starting distribution
+mdp.discount  # discount factor
+mdp.terminal_states  # the location of the terminal states
 ```
 
 ### Absorbing states
@@ -187,5 +187,3 @@ I use this code consistently in many pieces of work. If you use it, let me know 
 
 - [Bachman, Philip, et al. "Vfunc: a deep generative model for functions." arXiv preprint arXiv:1807.04106 (2018).](https://arxiv.org/abs/1807.04106)
 - [Ahmed, Zafarali, et al. "Understanding the impact of entropy in policy learning." arXiv preprint arXiv:1811.11214 (2018).](https://arxiv.org/abs/1811.11214)
-
-

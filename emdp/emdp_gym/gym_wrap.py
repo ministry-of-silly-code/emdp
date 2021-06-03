@@ -19,11 +19,11 @@ class GymToMDP(gym.Env):
         self.mdp = mdp
         if observation_one_hot:
             self.observation_space = spaces.Box(
-                low=0, high=1, shape=(self.mdp.state_space, ), dtype=np.int32)
+                low=0, high=1, shape=(self.mdp.num_states,), dtype=np.int32)
         else:
-            self.observation_space = spaces.Discrete(self.mdp.state_space)
+            self.observation_space = spaces.Discrete(self.mdp.num_states)
 
-        self.action_space = spaces.Discrete(self.mdp.action_space)
+        self.action_space = spaces.Discrete(self.mdp.num_actions)
 
         self._obs_one_hot = observation_one_hot
 
@@ -32,7 +32,7 @@ class GymToMDP(gym.Env):
 
     def step(self, action):
         state, reward, done, info = self.mdp.step(action)
-        
+
         return (self.maybe_convert_state(state),
                 reward, done, info)
 
@@ -48,5 +48,3 @@ class GymToMDP(gym.Env):
             return state
         else:
             return utils.convert_onehot_to_int(state)
-
-

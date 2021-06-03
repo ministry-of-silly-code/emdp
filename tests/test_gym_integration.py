@@ -8,7 +8,7 @@ def test_gym_registered():
     gym.make('two-state-v0')
 
 def check_gym_step(env):
-    assert env.step(env.action_space.sample()) is not None
+    assert env.step(env.num_actions.sample()) is not None
 
 def check_gym_reset(env):
     assert env.reset() is not None
