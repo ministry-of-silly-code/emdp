@@ -82,7 +82,7 @@ class MDP(Env):
 
         # get the vector representing the next state probabilities:
         current_state_idx = utils.convert_onehot_to_int(self.current_state)
-        next_state_probs = self.P[current_state_idx, action]
+        next_state_probs = self.transition[current_state_idx, action]
 
         # sample the next state
         sampled_next_state = self.rng.choice(np.arange(self.num_states), p=next_state_probs)

@@ -50,33 +50,41 @@ class ChainMDP(MDP):
         assert 1 >= p_success >= 0
 
         # building the transition matrix.
-        P = np.zeros((num_states, self.num_actions, num_states))
+        transition = np.zeros((num_states, self.num_actions, num_states))
         for s in range(num_states):
             if s in terminal_states:
                 # whatever action we take from this state should end up in this state again
-                P[s, :, s] = 1
+                transition[s, :, s] = 1
             else:
                 if s == 0:
                     # we are at the left edge of the grid.
                     # if we take the LEFT action it should be a no-op.
-                    P[s, actions.LEFT, s - 1] = 0
-                    P[s, actions.LEFT, s] = 1
+                    transition[s, actions.LEFT, s - 1] = 0
+                    transition[s, actions.LEFT, s] = 1
                 else:
                     # not at the left edge, fill in LEFT operation as usual
-                    P[s, actions.LEFT, s - 1] = p_success  # successfully transition to the left
-                    P[s, actions.LEFT, s] = p_fail
+                    transition[s, actions.LEFT, s - 1] = p_success  # successfully transition to the left
+                    transition[s, actions.LEFT, s] = p_fail
 
                 if s == num_states - 1:
                     # we are at the right edge of the grid.
                     # if we take RIGHT action it should be a no-op
-                    P[s, actions.RIGHT, s] = 1
+                    transition[s, actions.RIGHT, s] = 1
                 else:
                     # not at the right edge, fill in RIGHT operation as usual
-                    P[s, actions.RIGHT, s + 1] = p_success  # successfully transition to the right
-                    P[s, actions.RIGHT, s] = p_fail
+                    transition[s, actions.RIGHT, s + 1] = p_success  # successfully transition to the right
+                    transition[s, actions.RIGHT, s] = p_fail
 
-        R = np.zeros((num_states, self.num_actions))
+        reward = np.zeros((num_states, self.num_actions))
         for (reward_loc, action, reward_mag) in reward_spec:
-            R[reward_loc, action] = reward_mag  # any action at this position leads to a reward.
+            reward[reward_loc, action] = reward_mag  # any action at this position leads to a reward.
 
-        super(ChainMDP, self).__init__(P, R, discount, starting_distribution, terminal_states, seed=1337)
+        super(ChainMDP, self).__init__(transition, reward, discount, starting_distribution, terminal_states, seed=1337)
+
+    def torch(self):
+        import torch
+        self.reward = torch.tensor(self.reward, dtype=torch.float)
+        self.transition = torch.tensor(self.transition, dtype=torch.float)
+        self.initial_state = torch.tensor(self.initial_state, dtype=torch.float)
+        self.discount = torch.tensor(self.discount, dtype=torch.float)
+        return self
