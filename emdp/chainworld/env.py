@@ -80,11 +80,3 @@ class ChainMDP(MDP):
             reward[reward_loc, action] = reward_mag  # any action at this position leads to a reward.
 
         super(ChainMDP, self).__init__(transition, reward, discount, starting_distribution, terminal_states, seed=1337)
-
-    def torch(self):
-        import torch
-        self.reward = torch.tensor(self.reward, dtype=torch.float)
-        self.transition = torch.tensor(self.transition, dtype=torch.float)
-        self.initial_state = torch.tensor(self.initial_state, dtype=torch.float)
-        self.discount = torch.tensor(self.discount, dtype=torch.float)
-        return self

@@ -63,7 +63,7 @@ class MDP(Env):
         self.done = False
         return self.current_state
 
-    def step(self, action):
+    def step(self, action) -> np.float32:
         """
         :param action: An integer representing the action taken.
         :return:
@@ -92,6 +92,14 @@ class MDP(Env):
         self.current_state = utils.convert_int_rep_to_onehot(sampled_next_state, self.num_states)
 
         return self.current_state, reward, self.done, {'gamma': self.discount}
+
+    def torch(self):
+        import torch
+        self.reward = torch.tensor(self.reward, dtype=torch.float)
+        self.transition = torch.tensor(self.transition, dtype=torch.float)
+        self.initial_state = torch.tensor(self.initial_state, dtype=torch.float)
+        self.discount = torch.tensor(self.discount, dtype=torch.float)
+        return self
 
 
 class MultiTaskMDP(Env):

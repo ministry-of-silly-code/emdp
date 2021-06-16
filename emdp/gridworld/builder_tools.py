@@ -131,8 +131,6 @@ class TransitionMatrixBuilder(object):
             self.add_wall_at(tuple(my_location))
 
 
-
-
 def create_reward_matrix(state_space, size, reward_spec, action_space=4):
     """
     Abstraction to create reward matrices.
@@ -142,7 +140,7 @@ def create_reward_matrix(state_space, size, reward_spec, action_space=4):
     :param action_space: The size of the action space
     :return:
     """
-    R = np.zeros((state_space, action_space))
+    R = np.zeros((state_space, action_space), dtype=np.float32)
     for (reward_location, reward_value) in reward_spec.items():
         reward_location = flatten_state(reward_location, size, state_space).argmax()
         R[reward_location, :] = reward_value

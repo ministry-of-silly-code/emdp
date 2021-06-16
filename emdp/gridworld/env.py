@@ -1,16 +1,12 @@
 """
 A simple grid world environment
 """
-import numpy as np
-import random
-from ..common import MDP
-from ..exceptions import EpisodeDoneError, InvalidActionError
-from ..actions import LEFT, RIGHT, UP, DOWN
 from .helper_utilities import flatten_state, unflatten_state
+from ..common import MDP
+
 
 class GridWorldMDP(MDP):
-    def __init__(self, transition, reward, discount, initial_state, terminal_states, size, seed=1337, validate_arguments=False,
-                 convert_terminal_states_to_ints=False):
+    def __init__(self, transition, reward, discount, initial_state, terminal_states, size, seed=1337, convert_terminal_states_to_ints=False):
         """
         (!) if terminal_states is not empty then there will be an absorbing state. So
             the actual number of states will be size x size + 1
@@ -26,10 +22,10 @@ class GridWorldMDP(MDP):
         """
         if not convert_terminal_states_to_ints:
             terminal_states = list(map(lambda tupl: int(size * tupl[0] + tupl[1]), terminal_states))
-        self.size =  size
+        self.size = size
         self.human_state = (None, None)
         self.has_absorbing_state = len(terminal_states) > 0
-        super().__init__(transition, reward, discount, initial_state, terminal_states, seed=seed, validate_arguments=validate_arguments)
+        super().__init__(transition, reward, discount, initial_state, terminal_states, seed=seed)
 
     def reset(self):
         super().reset()
