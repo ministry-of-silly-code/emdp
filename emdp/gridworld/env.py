@@ -1,6 +1,10 @@
 """
 A simple grid world environment
 """
+import matplotlib.pyplot as plt
+import numpy as np
+
+import emdp.actions
 from .helper_utilities import flatten_state, unflatten_state
 from ..common import MDP
 
@@ -47,3 +51,64 @@ class GridWorldMDP(MDP):
 
     def set_current_state_to(self, tuple_state):
         return super().set_current_state_to(self.flatten_state(tuple_state).argmax())
+
+    def plot_sa(self, title, data, scale_data=True, frame=(0, 0, 0, 0)):
+        """ This is going to generate a quiver plot to visualize the policy graphically.
+        It is useful to see all the probabilities assigned to the four possible actions in each state """
+
+        if scale_data:
+            scale = np.abs(data).max()
+            data = data / (scale * 1.1)
+        num_cols, num_rows = self.size, self.size
+        num_states, num_actions = data.shape
+        assert num_actions == 4
+
+        direction = np.zeros((num_actions, 2))
+        direction[emdp.actions.LEFT, :] = np.array((-1, 0))  # left
+        direction[emdp.actions.RIGHT] = np.array((1, 0))  # right
+        direction[emdp.actions.UP] = np.array((0, 1))  # up
+        direction[emdp.actions.DOWN] = np.array((0, -1))  # down
+
+        x, y = np.meshgrid(np.arange(num_rows), np.arange(num_cols))
+        x, y = x.flatten(), y.flatten()
+        figure = plt.figure()
+        ax = plt.gca()
+
+        for base, a in zip(direction, range(num_actions)):
+            quivers = np.einsum("d,m->md", base, data[:, a])
+
+            pos = data[:, a] > 0
+            ax.quiver(x[pos], y[pos], *quivers[pos].T, units='xy', scale=2.0, color='g')
+
+            pos = data[:, a] < 0
+            ax.quiver(x[pos], y[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r')
+
+        x0, x1, y0, y1 = frame
+        # set axis limits / ticks / etc... so we have a nice grid overlay
+        ax.set_xlim((x0 - 0.5, num_cols - x1 - 0.5))
+        ax.set_ylim((y0 - 0.5, num_rows - y1 - 0.5)[::-1])
+
+        # ax.set_xticks(xs)
+        # ax.set_yticks(ys)
+
+        # major ticks
+
+        ax.set_xticks(np.arange(x0, num_cols - x1, 1))
+        ax.xaxis.set_tick_params(labelsize=5)
+        ax.set_yticks(np.arange(y0, num_rows - y1, 1))
+        ax.yaxis.set_tick_params(labelsize=5)
+
+        # minor ticks
+        ax.set_xticks(np.arange(*ax.get_xlim(), 1), minor=True)
+        ax.set_yticks(np.arange(*ax.get_ylim()[::-1], 1), minor=True)
+
+        ax.grid(which='minor', color='gray', linestyle='-', linewidth=1)
+        ax.set_aspect(1)
+
+        tag = f"plots/{title}"
+
+        if scale_data:
+            title += f"_{scale:.4f}"
+
+        ax.set_title(title, fontdict={'fontsize': 8, 'fontweight': 'medium'})
+        return tag, figure
