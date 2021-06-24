@@ -36,13 +36,12 @@ class MDP(Env):
 
         self.transition = transition
         self.reward = reward
-        self.num_states = transition.shape[0]
-        self.num_actions = reward.shape[1]
+        self.num_states, self.num_actions, _ = transition.shape
 
         assert np.allclose(transition.sum(axis=2), 1), 'Transition matrix does not seem to be a stochastic matrix (i.e. the sum over states for each action doesn not equal 1'
         assert self.num_states == transition.shape[2], '3rd Dimension of Transition Matrix is not of size |S|'
         assert self.num_actions == transition.shape[1], '2nd Dimension of Transition Matrix is not of size |A|'
-        assert self.num_states == reward.shape[0], '1st Dimesnion of Reward Matrix is not of size |S|'
+        assert self.num_states == reward.shape[0], '1st Dimension of Reward Matrix is not of size |S|'
         assert self.num_states == initial_state.shape[0], 'Distribution over initial states is not over |S|'
 
         self.discount = discount

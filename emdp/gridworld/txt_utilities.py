@@ -1,9 +1,8 @@
 """Utilities to help load gridworlds from a text file.
 """
 from .helper_utilities import flatten_state
-from .builder_tools import (TransitionMatrixBuilder,
-                            create_reward_matrix)
-from . import GridWorldMDP
+from .builder_tools import (TransitionMatrixBuilder, create_reward_matrix)
+# from . import GridWorldMDP
 
 def get_char_matrix(raw_file):
     """
