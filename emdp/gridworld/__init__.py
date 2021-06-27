@@ -145,7 +145,7 @@ class GridWorldMDP(MDP):
         ax.grid(which='minor', color='gray', linestyle='-', linewidth=1)
         ax.set_aspect(1)
 
-        tag = f"plots/{title}"
+        tag = f"{title}"
 
         if scale_data:
             title += f"_{scale:.4f}"
