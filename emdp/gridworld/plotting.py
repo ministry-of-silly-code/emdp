@@ -1,6 +1,8 @@
-from .helper_utilities import unflatten_state
-from .env import GridWorldMDP
 import numpy as np
+
+from .env import GridWorldMDP
+from .helper_utilities import unflatten_state
+
 
 class GridWorldPlotter(object):
     def __init__(self, grid_size, has_absorbing_state=True):
@@ -64,7 +66,7 @@ class GridWorldPlotter(object):
 
         for trajectory_unflattened in trajectories_unflat:
             x, y = list(zip(*trajectory_unflattened))
-            x = np.array(x)  + jitter_scale * np.random.rand(len(x)) / (2 * self.size)
+            x = np.array(x) + jitter_scale * np.random.rand(len(x)) / (2 * self.size)
             y = np.array(y) + jitter_scale * np.random.rand(len(x)) / (2 * self.size)
             ax.plot(x, y)
 
@@ -130,7 +132,7 @@ class GridWorldPlotter(object):
         # plot actual state visitation heatmap
         for trajectory in trajectories_unflat:
             for state in trajectory:
-                x_coord =state[0]
+                x_coord = state[0]
                 y_coord = state[1]
                 state_visitations[y_coord, x_coord] += 1.
         # plot walls in lame way -- set them to some hand-engineered color
@@ -158,3 +160,24 @@ class GridWorldPlotter(object):
         """
         return map(lambda traj: list(map(self._unflatten, traj)), trajectories)
 
+
+def enjoy_policy(env, intrinsic_reward, policy):
+    state = env.reset()
+    cum_reward = 0
+    cum_intr_reward = 0
+    for _ in range(100):
+        action = int(np.argmax(policy[state]))
+        # env.render()
+
+        print(["V", "^", ">", "<", "pickup", "dropoff"][action])
+
+        new_state, reward, done, _ = env.step(action)
+
+        cum_reward += reward
+        cum_intr_reward += intrinsic_reward[state, action]
+
+        if done:
+            state = env.reset()
+        else:
+            state = new_state
+    return cum_intr_reward, cum_reward
