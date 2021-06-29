@@ -5,27 +5,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 import emdp.actions
-from . import txt_utilities
 from . import builder_tools
+from . import txt_utilities
 from .helper_utilities import flatten_state, unflatten_state
 from ..common import MDP
 
 
 class GridWorldMDP(MDP):
-    def __init__(self, goal):
-        """
-        (!) if terminal_states is not empty then there will be an absorbing state. So
-            the actual number of states will be size x size + 1
-            if there is a terminal state, it should be the last one.
-        :param transition: Transition matrix |S| x |A| x |S|
-        :param reward: Transition matrix |S| x |A|
-        :param discount: discount factor
-        :param initial_state: initial starting distribution
-        :param terminal_states: Must be a list of (x,y) tuples.  use skip_terminal_state_conversion if giving ints
-        :param size: the size of the grid world (i.e there are size x size (+ 1)= |S| states)
-        :param seed:
-        :param validate_arguments:
-        """
+    def __init__(self, goal, initial_states=None):
         ascii_room = """
         #########
         #   #   #
@@ -41,27 +28,36 @@ class GridWorldMDP(MDP):
         # a[goal[1]] = "g"
         # ascii_room[goal[0]] = "".join(a)
 
+        terminal_states = (goal, )
         char_matrix = txt_utilities.get_char_matrix(ascii_room)
         reward_spec = {goal: +1}
 
         grid_size = len(char_matrix[0])
         builder = builder_tools.TransitionMatrixBuilder(grid_size=grid_size, has_terminal_state=False)
 
-        walls, empty_ = txt_utilities.ascii_to_walls(char_matrix)  # hacks
-        empty = []
-        for e in empty_:
+        walls, empty_coords = txt_utilities.ascii_to_walls(char_matrix)  # hacks
+        self.reachable_states_idx = []
+        for e in empty_coords:
             (e,), = flatten_state(e, grid_size, grid_size * grid_size).nonzero()
-            empty.append(e)
+            self.reachable_states_idx.append(e)
+
         builder.add_grid(p_success=1)
         for (r, c) in walls:
             builder.add_wall_at((r, c))
 
         R = builder_tools.create_reward_matrix(builder.P.shape[0], builder.grid_size, reward_spec, action_space=builder.P.shape[1])
-        # p0 = len(empty)
-        p0 = flatten_state((1, 1), builder.grid_size, R.shape[0])
-        p0[empty] = 1 / len(empty)
+        # p0 = len(self_empty_idx)
 
-        transition, reward, discount, initial_state, terminal_states, size = builder.P, R, 0.9, p0, (), builder.grid_size
+        p0 = np.zeros(R.shape[0])
+
+        if initial_states is None:
+            p0[self.reachable_states_idx] = 1 / len(self.reachable_states_idx)
+        else:
+            for e in initial_states:
+                (e,), = flatten_state(e, grid_size, grid_size * grid_size).nonzero()
+                p0[e] = 1 / len(initial_states)
+
+        transition, reward, discount, initial_state, size = builder.P, R, 0.9, p0, builder.grid_size
         seed, convert_terminal_states_to_ints = 1337, False
 
         if not convert_terminal_states_to_ints:
@@ -96,11 +92,20 @@ class GridWorldMDP(MDP):
         """ This is going to generate a quiver plot to visualize the policy graphically.
         It is useful to see all the probabilities assigned to the four possible actions in each state """
 
+        data_reachable = np.zeros_like(data)
+        data_unreachable = data.copy()
+
+        data_reachable[self.reachable_states_idx, :] = data[self.reachable_states_idx, :]
+        data_unreachable[self.reachable_states_idx, :] = 0.
+        del data
+
         if scale_data:
-            scale = np.abs(data).max()
-            data = data / (scale * 1.1)
+            scale = np.abs(data_reachable).max()
+            data_reachable = data_reachable / (scale * 1.1)
+            data_unreachable = np.clip(data_unreachable / (scale * 1.1), -1, 1)
+
         num_cols, num_rows = self.size, self.size
-        num_states, num_actions = data.shape
+        num_states, num_actions = data_unreachable.shape
         assert num_actions == 4
 
         direction = np.zeros((num_actions, 2))
@@ -115,13 +120,22 @@ class GridWorldMDP(MDP):
         ax = plt.gca()
 
         for base, a in zip(direction, range(num_actions)):
-            quivers = np.einsum("d,m->md", base, data[:, a])
+            quivers = np.einsum("d,m->md", base, data_unreachable[:, a])
 
-            pos = data[:, a] > 0
-            ax.quiver(x[pos], y[pos], *quivers[pos].T, units='xy', scale=2.0, color='g')
+            pos = data_unreachable[:, a] > 0
+            ax.quiver(x[pos], y[pos], *quivers[pos].T, units='xy', scale=2.0, color='g', alpha=0.1)
 
-            pos = data[:, a] < 0
-            ax.quiver(x[pos], y[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r')
+            pos = data_unreachable[:, a] < 0
+            ax.quiver(x[pos], y[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=0.1)
+
+        for base, a in zip(direction, range(num_actions)):
+            quivers = np.einsum("d,m->md", base, data_reachable[:, a])
+
+            pos = data_reachable[:, a] > 0
+            ax.quiver(x[pos], y[pos], *quivers[pos].T, units='xy', scale=2.0, color='g', alpha=1.0)
+
+            pos = data_reachable[:, a] < 0
+            ax.quiver(x[pos], y[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=1.0)
 
         x0, x1, y0, y1 = frame
         # set axis limits / ticks / etc... so we have a nice grid overlay

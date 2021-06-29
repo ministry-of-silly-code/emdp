@@ -14,6 +14,6 @@ class MultiObjectiveGridWorldMDP(MDP):
 
 
 def four_rooms_gw_multiobjective(goals):
-    gws = [GridWorldMDP(goal) for goal in goals]
+    gws = [GridWorldMDP(goal, initial_states=[(2, 2), ]) for goal in goals] # TODO: initial state
     gw = MultiObjectiveGridWorldMDP(gws)
     return gw
