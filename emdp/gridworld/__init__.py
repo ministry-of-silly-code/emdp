@@ -1,6 +1,7 @@
 """
 A simple grid world environment
 """
+import gym.spaces
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -28,7 +29,7 @@ class GridWorldMDP(MDP):
         # a[goal[1]] = "g"
         # ascii_room[goal[0]] = "".join(a)
 
-        terminal_states = (goal, )
+        terminal_states = (goal,)
         char_matrix = txt_utilities.get_char_matrix(ascii_room)
         reward_spec = {goal: +1}
 
@@ -66,6 +67,8 @@ class GridWorldMDP(MDP):
         self.human_state = (None, None)
         self.has_absorbing_state = len(terminal_states) > 0
         super().__init__(transition, reward, discount, initial_state, terminal_states, seed=seed)
+        self.action_space = gym.spaces.Discrete(self.num_actions)
+        self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,))
 
     def reset(self):
         super().reset()
@@ -166,3 +169,6 @@ class GridWorldMDP(MDP):
 
         ax.set_title(title, fontdict={'fontsize': 8, 'fontweight': 'medium'})
         return tag, figure
+
+    def seed(self, seed):
+        self.set_seed(seed)

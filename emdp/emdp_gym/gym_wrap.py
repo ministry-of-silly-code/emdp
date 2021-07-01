@@ -1,15 +1,16 @@
 """Allows using emdp as a gym environment."""
-import numpy as np
 import gym
+import numpy as np
 from gym import spaces
 
 import emdp.utils as utils
 
+
 def gymify(mdp, **kwargs):
     return GymToMDP(mdp, **kwargs)
 
-class GymToMDP(gym.Env):
 
+class GymToMDP(gym.Env):
     def __init__(self, mdp, observation_one_hot=True):
         """
         :param mdp: The emdp.MDP object to wrap.
@@ -32,9 +33,7 @@ class GymToMDP(gym.Env):
 
     def step(self, action):
         state, reward, done, info = self.mdp.step(action)
-
-        return (self.maybe_convert_state(state),
-                reward, done, info)
+        return (self.maybe_convert_state(state), reward, done, info)
 
     def seed(self, seed):
         self.mdp.set_seed(seed)
