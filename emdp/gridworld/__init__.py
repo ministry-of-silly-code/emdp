@@ -95,7 +95,10 @@ class GridWorldMDP(MDP):
         """ This is going to generate a quiver plot to visualize the policy graphically.
         It is useful to see all the probabilities assigned to the four possible actions in each state """
 
+        assert data.shape == (self.num_states, self.num_actions)
         data_reachable = np.zeros_like(data)
+        scale = np.abs(data).max()
+
         data_unreachable = data.copy()
 
         data_reachable[self.reachable_states_idx, :] = data[self.reachable_states_idx, :]
@@ -103,7 +106,6 @@ class GridWorldMDP(MDP):
         del data
 
         if scale_data:
-            scale = np.abs(data_reachable).max()
             data_reachable = data_reachable / (scale * 1.1)
             data_unreachable = np.clip(data_unreachable / (scale * 1.1), -1, 1)
 
