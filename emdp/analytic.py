@@ -14,6 +14,7 @@ def calculate_P_pi(P, pi):
     """
     return np.einsum('sat,sa->st', P, pi)
 
+
 def calculate_R_pi(R, pi):
     r"""
     calculates R_pi
@@ -23,6 +24,7 @@ def calculate_R_pi(R, pi):
     :return:
     """
     return np.einsum('sa,sa->s', R, pi)
+
 
 def calculate_successor_representation(P_pi, gamma):
     """
@@ -37,6 +39,7 @@ def calculate_successor_representation(P_pi, gamma):
 
 def calculate_V_pi_from_successor_representation(Phi, R_pi):
     return np.einsum('st,t->s', Phi, R_pi)
+
 
 def calculate_V_pi(P, R, pi, gamma):
     r"""
