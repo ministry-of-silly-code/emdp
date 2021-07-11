@@ -13,17 +13,18 @@ from ..common import MDP
 
 
 class GridWorldMDP(MDP):
-    def __init__(self, goal, initial_states=None):
-        ascii_room = """
-        #########
-        #   #   #
-        #       #
-        #   #   #
-        ## ### ##
-        #   #   #
-        #       #
-        #   #   #
-        #########"""[1:].split('\n')
+    def __init__(self, goal, initial_states=None, ascii_room=None):
+        if ascii_room is None:
+            ascii_room = """
+            #########
+            #   #   #
+            #       #
+            #   #   #
+            ## ### ##
+            #   #   #
+            #       #
+            #   #   #
+            #########"""[1:].split('\n')
         ascii_room = [row.strip() for row in ascii_room]
         # a = list(ascii_room[goal[0]])
         # a[goal[1]] = "g"
@@ -31,8 +32,6 @@ class GridWorldMDP(MDP):
 
         terminal_states = (goal,)
         char_matrix = txt_utilities.get_char_matrix(ascii_room)
-        reward_spec = {goal: +1}
-
         grid_size = len(char_matrix[0])
         builder = builder_tools.TransitionMatrixBuilder(grid_size=grid_size, has_terminal_state=False)
 
@@ -46,8 +45,20 @@ class GridWorldMDP(MDP):
         for (r, c) in walls:
             builder.add_wall_at((r, c))
 
-        R = builder_tools.create_reward_matrix(builder.P.shape[0], builder.grid_size, reward_spec, action_space=builder.P.shape[1])
-        # p0 = len(self_empty_idx)
+        R = np.zeros(builder.P.shape[:2], dtype=np.float32)
+
+        idx = lambda r, c: flatten_state((r, c), builder.grid_size, builder.P.shape[0]).argmax()
+
+        # left = np.array(goal) + emdp.actions.LEFT_vec
+        # right = np.array(goal) + emdp.actions.RIGHT_vec
+        # up = np.array(goal) + emdp.actions.UP_vec
+        # down = np.array(goal) + emdp.actions.DOWN_vec
+        # R[idx(*left), emdp.actions.RIGHT] = 1
+        # R[idx(*right), emdp.actions.LEFT] = 1
+        # R[idx(*up), emdp.actions.DOWN] = 1
+        # R[idx(*down), emdp.actions.UP] = 1
+
+        R[idx(*goal), :] = 1
 
         p0 = np.zeros(R.shape[0])
 
@@ -114,13 +125,13 @@ class GridWorldMDP(MDP):
         assert num_actions == 4
 
         direction = np.zeros((num_actions, 2))
-        direction[emdp.actions.LEFT, :] = np.array((-1, 0))  # left
-        direction[emdp.actions.RIGHT] = np.array((1, 0))  # right
-        direction[emdp.actions.UP] = np.array((0, 1))  # up
-        direction[emdp.actions.DOWN] = np.array((0, -1))  # down
+        direction[emdp.actions.LEFT, :] = emdp.actions.LEFT_vec
+        direction[emdp.actions.RIGHT] = emdp.actions.RIGHT_vec
+        direction[emdp.actions.UP] = emdp.actions.UP_vec
+        direction[emdp.actions.DOWN] = emdp.actions.DOWN_vec
 
-        x, y = np.meshgrid(np.arange(num_rows), np.arange(num_cols))
-        x, y = x.flatten(), y.flatten()
+        y, x = np.meshgrid(np.arange(num_rows), np.arange(num_cols))
+        y, x = y.flatten(), x.flatten()
         figure = plt.figure()
         ax = plt.gca()
 

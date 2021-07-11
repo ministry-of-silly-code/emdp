@@ -94,8 +94,7 @@ def ascii_to_walls(char_matrix):
     # ...
     wall_locs = []
     empty = []
-    start_loc = None
-    goal_loc = None
+
     for r in range(grid_size):
         for c in range(grid_size):
             char = char_matrix[r][c]

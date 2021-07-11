@@ -3,6 +3,7 @@ Utilities to help build more complex grid worlds.
 """
 import numpy as np
 
+import emdp.actions
 from .helper_utilities import build_simple_grid, flatten_state
 
 
@@ -139,9 +140,9 @@ def create_reward_matrix(state_space, size, reward_spec, action_space=4):
     :return:
     """
     R = np.zeros((state_space, action_space), dtype=np.float32)
-    for (reward_location, reward_value) in reward_spec.items():
-        reward_location = flatten_state(reward_location, size, state_space).argmax()
-        R[reward_location, :] = reward_value
+    for (s0, a, reward_value) in reward_spec.items():
+        s0 = flatten_state(s0, size, state_space).argmax()
+        R[s0, a] = reward_value
 
     return R
 
