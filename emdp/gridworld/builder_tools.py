@@ -140,7 +140,7 @@ def create_reward_matrix(state_space, size, reward_spec, action_space=4):
     :return:
     """
     R = np.zeros((state_space, action_space), dtype=np.float32)
-    for (s0, a, reward_value) in reward_spec.items():
+    for (s0, a, reward_value) in reward_spec:
         s0 = flatten_state(s0, size, state_space).argmax()
         R[s0, a] = reward_value
 

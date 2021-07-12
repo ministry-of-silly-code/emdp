@@ -1,11 +1,11 @@
 """
 A simple grid world environment
 """
+import emdp.actions
 import gym.spaces
 import matplotlib.pyplot as plt
 import numpy as np
 
-import emdp.actions
 from . import builder_tools
 from . import txt_utilities
 from .helper_utilities import flatten_state, unflatten_state
@@ -125,33 +125,35 @@ class GridWorldMDP(MDP):
         assert num_actions == 4
 
         direction = np.zeros((num_actions, 2))
-        direction[emdp.actions.LEFT, :] = emdp.actions.LEFT_vec
-        direction[emdp.actions.RIGHT] = emdp.actions.RIGHT_vec
         direction[emdp.actions.UP] = emdp.actions.UP_vec
         direction[emdp.actions.DOWN] = emdp.actions.DOWN_vec
+        direction[emdp.actions.LEFT] = emdp.actions.LEFT_vec
+        direction[emdp.actions.RIGHT] = emdp.actions.RIGHT_vec
 
-        y, x = np.meshgrid(np.arange(num_rows), np.arange(num_cols))
-        y, x = y.flatten(), x.flatten()
+        r, c = np.meshgrid(np.arange(num_rows), np.arange(num_cols))
+        r, c = r.flatten(), c.flatten()
         figure = plt.figure()
         ax = plt.gca()
 
-        for base, a in zip(direction, range(num_actions)):
+        for (r_, c_), a in zip(direction, range(num_actions)):
+            base = (r_, -c_)
             quivers = np.einsum("d,m->md", base, data_unreachable[:, a])
 
             pos = data_unreachable[:, a] > 0
-            ax.quiver(x[pos], y[pos], *quivers[pos].T, units='xy', scale=2.0, color='g', alpha=0.1)
+            ax.quiver(c[pos], r[pos], *quivers[pos].T, units='xy', scale=2.0, color='g', alpha=0.1)
 
             pos = data_unreachable[:, a] < 0
-            ax.quiver(x[pos], y[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=0.1)
+            ax.quiver(c[pos], r[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=0.1)
 
-        for base, a in zip(direction, range(num_actions)):
+        for (r_, c_), a in zip(direction, range(num_actions)):
+            base = (r_, -c_)  # TODO: WHY is the flip necessary?
             quivers = np.einsum("d,m->md", base, data_reachable[:, a])
 
             pos = data_reachable[:, a] > 0
-            ax.quiver(x[pos], y[pos], *quivers[pos].T, units='xy', scale=2.0, color='g', alpha=1.0)
+            ax.quiver(c[pos], r[pos], *quivers[pos].T, units='xy', scale=2.0, color='g', alpha=1.0)
 
             pos = data_reachable[:, a] < 0
-            ax.quiver(x[pos], y[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=1.0)
+            ax.quiver(c[pos], r[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=1.0)
 
         x0, x1, y0, y1 = frame
         # set axis limits / ticks / etc... so we have a nice grid overlay

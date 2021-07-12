@@ -1,12 +1,15 @@
 import numpy as np
+
 from ..actions import LEFT, RIGHT, UP, DOWN
 from ..exceptions import InvalidActionError
+
 n_actions = 4
 
+
 def flatten_state(state, size, state_space):
-    """Flatten state (x,y) into a one hot vector"""
-    x, y = state
-    idx = size * y + x
+    """Flatten state (r,c) into a one hot vector"""
+    r, c = state
+    idx = r * size + c
     one_hot = np.zeros(state_space)
     one_hot[idx] = 1
     return one_hot
@@ -19,9 +22,10 @@ def unflatten_state(onehot, size, has_absorbing_state):
     (s,), = np.argwhere(onehot)
     return state_to_xy(s, size)
 
+
 def state_to_xy(s, size):
-    y, x = divmod(s, size)
-    return x, y
+    r, c = divmod(s, size)
+    return r, c
 
 
 def get_state_after_executing_action(action, state, grid_size):
@@ -34,9 +38,9 @@ def get_state_after_executing_action(action, state, grid_size):
     """
     if check_can_take_action(action, state, grid_size):
         if action == LEFT:
-            return state-1
+            return state - 1
         elif action == RIGHT:
-            return state+1
+            return state + 1
         elif action == UP:
             return state - grid_size
         elif action == DOWN:
@@ -44,6 +48,7 @@ def get_state_after_executing_action(action, state, grid_size):
     else:
         # cant execute action, stay in the same place.
         return state
+
 
 def check_can_take_action(action, state, grid_size):
     """
@@ -53,10 +58,10 @@ def check_can_take_action(action, state, grid_size):
     :param grid_size:
     :return:
     """
-    LAST_ROW = list(range(grid_size*(grid_size-1), grid_size*grid_size))
+    LAST_ROW = list(range(grid_size * (grid_size - 1), grid_size * grid_size))
     FIRST_ROW = list(range(0, grid_size))
-    LEFT_EDGE = list(range(0, grid_size*grid_size, grid_size))
-    RIGHT_EDGE = list(range(grid_size-1, grid_size*grid_size, grid_size))
+    LEFT_EDGE = list(range(0, grid_size * grid_size, grid_size))
+    RIGHT_EDGE = list(range(grid_size - 1, grid_size * grid_size, grid_size))
 
     if action == DOWN:
         if state in LAST_ROW:
@@ -75,6 +80,7 @@ def check_can_take_action(action, state, grid_size):
 
     return True
 
+
 def get_possible_actions(state, grid_size):
     """
     Gets all possible actions at a given state.
@@ -82,10 +88,10 @@ def get_possible_actions(state, grid_size):
     :param grid_size:
     :return:
     """
-    LAST_ROW = list(range(grid_size*(grid_size-1), grid_size*grid_size))
+    LAST_ROW = list(range(grid_size * (grid_size - 1), grid_size * grid_size))
     FIRST_ROW = list(range(0, grid_size))
-    LEFT_EDGE = list(range(0, grid_size*grid_size, grid_size))
-    RIGHT_EDGE = list(range(grid_size-1, grid_size*grid_size, grid_size))
+    LEFT_EDGE = list(range(0, grid_size * grid_size, grid_size))
+    RIGHT_EDGE = list(range(grid_size - 1, grid_size * grid_size, grid_size))
 
     available_actions = [LEFT, RIGHT, UP, DOWN]
     if state in LAST_ROW:
@@ -121,10 +127,10 @@ def build_simple_grid(size=5, terminal_states=[], p_success=1):
     """
     p_fail = 1 - p_success
 
-    n_states = size*size
-    grid_states = n_states # the number of entries of the state vector
-                           # corresponding to the grid itself.
-    if len(terminal_states) > 0: n_states += 1 # add an entry to state vector for terminal state
+    n_states = size * size
+    grid_states = n_states  # the number of entries of the state vector
+    # corresponding to the grid itself.
+    if len(terminal_states) > 0: n_states += 1  # add an entry to state vector for terminal state
     terminal_states = list(map(lambda tupl: int(size * tupl[0] + tupl[1]), terminal_states))
 
     # this helper function creates the state transition list for
@@ -134,7 +140,7 @@ def build_simple_grid(size=5, terminal_states=[], p_success=1):
         if state_idx in terminal_states:
             # no matter what action you take you should go to the absorbing state
             transition_probs[-1] = 1
-        elif state_idx == n_states-1 and len(terminal_states) > 0:
+        elif state_idx == n_states - 1 and len(terminal_states) > 0:
             # absorbing state, you should just transition back here whatever action you take.
             transition_probs[-1] = 1
 
@@ -149,13 +155,13 @@ def build_simple_grid(size=5, terminal_states=[], p_success=1):
                     transition_probs[get_state_after_executing_action(action, state_idx, size)] = p_success
                     possible_actions.remove(action)
                 for other_action in possible_actions:
-                    transition_probs[get_state_after_executing_action(other_action, state_idx, size)] = p_fail/len(possible_actions)
+                    transition_probs[get_state_after_executing_action(other_action, state_idx, size)] = p_fail / len(possible_actions)
 
             else:
                 possible_actions = get_possible_actions(state_idx, size)
-                transition_probs[state_idx] = p_success # cant take action, stay in same place
+                transition_probs[state_idx] = p_success  # cant take action, stay in same place
                 for other_action in possible_actions:
-                    transition_probs[get_state_after_executing_action(other_action, state_idx, size)] = p_fail/len(possible_actions)
+                    transition_probs[get_state_after_executing_action(other_action, state_idx, size)] = p_fail / len(possible_actions)
 
         else:
             raise InvalidActionError('Invalid action {} in the 2D gridworld'.format(action))
@@ -165,11 +171,8 @@ def build_simple_grid(size=5, terminal_states=[], p_success=1):
     for s in range(n_states):
         for a in range(n_actions):
             P[s, a, :] = create_state_list_for_action(s, a)
-    #
-    # T = {s: {a: create_state_list_for_action(s, a) for a in range(n_actions)} for s in range(n_states)}
-    # T[0][LEFT][0], T[0][RIGHT][0], T[0][DOWN][0], T[0][UP][0] = 1, 1, 1, 1
-    # T[15][LEFT][15], T[15][RIGHT][15], T[15][DOWN][15], T[15][UP][15] = 1, 1, 1, 1
     return P
+
 
 def add_walls():
     pass
