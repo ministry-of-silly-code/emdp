@@ -12,35 +12,17 @@ class TransitionMatrixBuilder(object):
     Builder object to build a transition matrix for a grid world
     """
 
-    def __init__(self, grid_size, action_space=4, has_terminal_state=True):
-        self.has_terminal_state = has_terminal_state
+    def __init__(self, grid_size, action_space, terminal_states, p_success):
+        self.terminal_states = terminal_states
         self.grid_size = grid_size
         self.action_space = action_space
-        self.state_space = grid_size * grid_size + int(has_terminal_state)
+        self.state_space = grid_size * grid_size
+        self._P = np.zeros((self.state_space, self.action_space, self.state_space))
         self._P = np.zeros((self.state_space, self.action_space, self.state_space))
         self.grid_added = False
         self.P_modified = False
-
-    def add_grid(self, terminal_states=[], p_success=1):
-        """
-        Adds a grid so that you cant walk off the edges of the grid
-        :param terminal_states:
-        :param p_success:
-        :return:
-        """
-        if self.has_terminal_state and len(terminal_states) == 0:
-            raise ValueError('has_terminal_states is true, but no terminal states supplied.')
-
-        if self.grid_added:
-            raise ValueError('Grid has already been added')
-
-        if self.P_modified:
-            raise ValueError('transition matrix has already been modified. '
-                             'Adding a grid now can lead to weird behaviour')
-
-        self._P = build_simple_grid(size=self.grid_size, p_success=p_success, terminal_states=terminal_states)
-        self.grid_added = True
-        self.P_modified = True
+        # self.p_success = p_success
+        self._P = build_simple_grid(size=self.grid_size, p_success=p_success, terminal_states=self.terminal_states)
 
     def add_wall_at(self, tuple_location):
         """

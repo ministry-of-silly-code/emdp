@@ -128,7 +128,6 @@ def build_simple_grid(size=5, terminal_states=[], p_success=1):
     n_states = size * size
     grid_states = n_states  # the number of entries of the state vector
     # corresponding to the grid itself.
-    if len(terminal_states) > 0: n_states += 1  # add an entry to state vector for terminal state
     terminal_states = list(map(lambda tupl: int(size * tupl[0] + tupl[1]), terminal_states))
 
     # this helper function creates the state transition list for
@@ -137,10 +136,7 @@ def build_simple_grid(size=5, terminal_states=[], p_success=1):
         transition_probs = np.zeros(n_states)
         if state_idx in terminal_states:
             # no matter what action you take you should go to the absorbing state
-            transition_probs[-1] = 1
-        elif state_idx == n_states - 1 and len(terminal_states) > 0:
-            # absorbing state, you should just transition back here whatever action you take.
-            transition_probs[-1] = 1
+            transition_probs[state_idx] = 1
 
         elif action in [LEFT, RIGHT, UP, DOWN]:
             # valid action, now see if we can actually execute this action

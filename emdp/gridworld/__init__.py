@@ -14,7 +14,7 @@ from ..common import MDP
 
 class GridWorldMDP(MDP):
     def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337):
-        assert (goal and not goals) or (not goals and goal)
+        assert (goal and not goals) or (not goal and goals)
 
         if ascii_room is None:
             ascii_room = """
@@ -32,7 +32,12 @@ class GridWorldMDP(MDP):
         terminal_states = (goal,)
         char_matrix = txt_utilities.get_char_matrix(ascii_room)
         grid_size = len(char_matrix[0])
-        builder = builder_tools.TransitionMatrixBuilder(grid_size=grid_size, has_terminal_state=False)
+        builder = builder_tools.TransitionMatrixBuilder(
+            grid_size=grid_size,
+            action_space=4,
+            terminal_states=terminal_states,
+            p_success=1.
+        )
 
         walls, empty_coords = txt_utilities.ascii_to_walls(char_matrix)  # hacks
         self.reachable_states_idx = []
@@ -40,11 +45,10 @@ class GridWorldMDP(MDP):
             (e,), = flatten_state(e, grid_size, grid_size * grid_size).nonzero()
             self.reachable_states_idx.append(e)
 
-        builder.add_grid(p_success=1)
         for (r, c) in walls:
             builder.add_wall_at((r, c))
 
-        R = np.zeros(builder.P.shape[:2], dtype=np.float32)
+        reward = np.zeros(builder.P.shape[:2], dtype=np.float32)
 
         idx = lambda r, c: flatten_state((r, c), builder.grid_size, builder.P.shape[0]).argmax()
 
@@ -52,27 +56,27 @@ class GridWorldMDP(MDP):
         # right = np.array(goal) + emdp.actions.RIGHT_vec
         # up = np.array(goal) + emdp.actions.UP_vec
         # down = np.array(goal) + emdp.actions.DOWN_vec
-        # R[idx(*left), emdp.actions.RIGHT] = 1
-        # R[idx(*right), emdp.actions.LEFT] = 1
-        # R[idx(*up), emdp.actions.DOWN] = 1
-        # R[idx(*down), emdp.actions.UP] = 1
+        # reward[idx(*left), emdp.actions.RIGHT] = 1
+        # reward[idx(*right), emdp.actions.LEFT] = 1
+        # reward[idx(*up), emdp.actions.DOWN] = 1
+        # reward[idx(*down), emdp.actions.UP] = 1
 
-        R[idx(*goal), :] = 1
+        reward[idx(*goal), :] = 1
 
-        p0 = np.zeros(R.shape[0])
+        initial_state_distr = np.zeros(reward.shape[0])
 
         if initial_states is None:
-            p0[self.reachable_states_idx] = 1 / len(self.reachable_states_idx)
+            initial_state_distr[self.reachable_states_idx] = 1 / len(self.reachable_states_idx)
         else:
             for e in initial_states:
                 (e,), = flatten_state(e, grid_size, grid_size * grid_size).nonzero()
-                p0[e] = 1 / len(initial_states)
+                initial_state_distr[e] = 1 / len(initial_states)
 
-        transition, reward, discount, initial_state, size = builder.P, R, 0.9, p0, builder.grid_size
+        discount, size = 0.9, builder.grid_size
 
         terminal_states = list(map(lambda tupl: int(size * tupl[0] + tupl[1]), terminal_states))
         self.size = size
-        super().__init__(transition, reward, discount, initial_state, terminal_states, seed=seed)
+        super().__init__(builder.P, reward, discount, initial_state_distr, terminal_states, seed=seed)
         self.action_space = gym.spaces.Discrete(self.num_actions)
         self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,))
 
