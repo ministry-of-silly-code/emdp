@@ -15,10 +15,8 @@ def flatten_state(state, size, state_space):
     return one_hot
 
 
-def unflatten_state(onehot, size, has_absorbing_state):
+def unflatten_state(onehot, size):
     """Unflatten a one hot vector into a (x,y) pair"""
-    if has_absorbing_state:
-        onehot = onehot[:-1]
     (s,), = np.argwhere(onehot)
     return state_to_xy(s, size)
 

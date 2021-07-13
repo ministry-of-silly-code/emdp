@@ -1,11 +1,11 @@
 """
 A simple grid world environment
 """
-import emdp.actions
 import gym.spaces
 import matplotlib.pyplot as plt
 import numpy as np
 
+import emdp.actions
 from . import builder_tools
 from . import txt_utilities
 from .helper_utilities import flatten_state, unflatten_state
@@ -13,7 +13,9 @@ from ..common import MDP
 
 
 class GridWorldMDP(MDP):
-    def __init__(self, goal, initial_states=None, ascii_room=None):
+    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337):
+        assert (goal and not goals) or (not goals and goal)
+
         if ascii_room is None:
             ascii_room = """
             #########
@@ -26,9 +28,6 @@ class GridWorldMDP(MDP):
             #   #   #
             #########"""[1:].split('\n')
         ascii_room = [row.strip() for row in ascii_room]
-        # a = list(ascii_room[goal[0]])
-        # a[goal[1]] = "g"
-        # ascii_room[goal[0]] = "".join(a)
 
         terminal_states = (goal,)
         char_matrix = txt_utilities.get_char_matrix(ascii_room)
@@ -70,21 +69,16 @@ class GridWorldMDP(MDP):
                 p0[e] = 1 / len(initial_states)
 
         transition, reward, discount, initial_state, size = builder.P, R, 0.9, p0, builder.grid_size
-        seed, convert_terminal_states_to_ints = 1337, False
 
-        if not convert_terminal_states_to_ints:
-            terminal_states = list(map(lambda tupl: int(size * tupl[0] + tupl[1]), terminal_states))
+        terminal_states = list(map(lambda tupl: int(size * tupl[0] + tupl[1]), terminal_states))
         self.size = size
-        self.human_state = (None, None)
-        self.has_absorbing_state = len(terminal_states) > 0
         super().__init__(transition, reward, discount, initial_state, terminal_states, seed=seed)
         self.action_space = gym.spaces.Discrete(self.num_actions)
         self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,))
 
-    def reset(self):
-        super().reset()
-        self.human_state = self.unflatten_state(self.current_state)
-        return self.current_state
+    # def reset(self):
+    #     super().reset()
+    #     return self.current_state
 
     def flatten_state(self, state):
         """Flatten state (x,y) into a one hot vector"""
@@ -92,12 +86,11 @@ class GridWorldMDP(MDP):
 
     def unflatten_state(self, onehot):
         """Unflatten a one hot vector into a (x,y) pair"""
-        return unflatten_state(onehot, self.size, self.has_absorbing_state)
+        return unflatten_state(onehot, self.size)
 
-    def step(self, action):
-        state, reward, done, info = super().step(action)
-        self.human_state = self.unflatten_state(self.current_state)
-        return state, reward, done, info
+    # def step(self, action):
+    #     state, reward, done, info = super().step(action)
+    #     return state, reward, done, info
 
     def set_current_state_to(self, tuple_state):
         return super().set_current_state_to(self.flatten_state(tuple_state).argmax())
@@ -130,7 +123,7 @@ class GridWorldMDP(MDP):
         direction[emdp.actions.LEFT] = emdp.actions.LEFT_vec
         direction[emdp.actions.RIGHT] = emdp.actions.RIGHT_vec
 
-        r, c = np.meshgrid(np.arange(num_rows), np.arange(num_cols))
+        c, r = np.meshgrid(np.arange(num_rows), np.arange(num_cols))
         r, c = r.flatten(), c.flatten()
         figure = plt.figure()
         ax = plt.gca()
