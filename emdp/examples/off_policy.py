@@ -1,5 +1,7 @@
 import numpy as np
+
 from emdp.common import MDP
+
 
 def build_two_circle_MDP(discount=0.6, good_reward=10., distractor_reward=5.):
     """MDP counter example given in Fig 1a of Zhang, et al.
