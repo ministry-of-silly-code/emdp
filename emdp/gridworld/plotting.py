@@ -1,34 +1,16 @@
 import numpy as np
 
-from .env import GridWorldMDP
+# from .env import GridWorldMDP
+import emdp.gridworld
 from .helper_utilities import unflatten_state
 
 
-class GridWorldPlotter(object):
-    def __init__(self, grid_size, has_absorbing_state=True):
-        """
-        Utility to plot gridworlds
-        :param grid_size: size of the gridworld
-        :param has_absorbing_state: boolean representing if the gridworld has an absorbing state
-        """
-        if isinstance(grid_size, (GridWorldMDP,)):
-            raise TypeError('grid_size cannot be a GridWorldMDP. '
-                            'To instantiate from GridWorldMDP use GridWorldPlotter.from_mdp()')
-        assert type(grid_size) is int, 'Gridworld size must be int'
-        self.size = grid_size
-        self.has_absorbing_state = has_absorbing_state
-
-        # TODO: store where the rewards are so we can plot them.
+class GridWorldPlotter:
+    def __init__(self, mdp):
+        self.mdp = mdp
 
     def _unflatten(self, onehot_state):
         return unflatten_state(onehot_state, self.size, self.has_absorbing_state)
-
-    @staticmethod
-    def from_mdp(mdp):
-        # TODO: obtain reward specifications
-        if not isinstance(mdp, (GridWorldMDP,)):
-            raise TypeError('Only GridWorldMDPs can be used with GridWorldPlotters')
-        return GridWorldPlotter(mdp.size, mdp.has_absorbing_state)
 
     def plot_grid(self, ax):
         """

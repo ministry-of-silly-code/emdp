@@ -1,11 +1,16 @@
 """
 A simple grid world environment
 """
+import random
+
 import gym.spaces
 import matplotlib.pyplot as plt
 import numpy as np
+import tqdm
 
 import emdp.actions
+import emdp.gridworld.plotting
+import emdp.gridworld.plotting
 from . import builder_tools
 from . import txt_utilities
 from .helper_utilities import flatten_state, unflatten_state
@@ -181,6 +186,42 @@ class GridWorldMDP(MDP):
 
         ax.set_title(title, fontdict={'fontsize': 8, 'fontweight': 'medium'})
         return tag, figure
+
+    def enjoy_policy(self, policy, title):
+        raise NotImplementedError
+        gwp = emdp.gridworld.plotting.GridWorldPlotter(self)
+
+        trajectories = []
+        trajectory = []
+        for _ in tqdm.trange(1):
+            trajectory.clear()
+            trajectory.append(self.reset())
+            state = trajectory[-1]
+
+            for _ in range(self.size * self.size * 100):
+                a = policy(state)
+                state, reward, done, info = self.step(a)
+                trajectory.append(state)
+            trajectories.append(trajectory)
+
+        fig = plt.figure(figsize=(10, 4))
+        pos = 121
+
+        ax = fig.add_subplot(pos)
+        ax.title.set_text(title)
+        # ax.set_xlim(?, 0)  # decreasing time
+
+        # trajectory
+        gwp.plot_trajectories(ax, trajectories)
+        gwp.plot_grid(ax)
+
+        # ax = fig.add_subplot(pos + 1)
+        # ax.set_ylim((-0.5, 2.5))
+        gwp.plot_heatmap(ax, trajectories)
+
+        gwp.plot_grid(ax)
+        plt.show()
+        self.reset()
 
     def seed(self, seed):
         self.set_seed(seed)
