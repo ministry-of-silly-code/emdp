@@ -1,5 +1,6 @@
 import jax.numpy as np
 
+
 def policies_evaluation(mdp, policies):
     ppi = np.einsum('ast,nsa->nst', mdp.P, policies)
     rpi = np.einsum('nsa,nsa->ns', mdp.rs, policies)
@@ -8,6 +9,7 @@ def policies_evaluation(mdp, policies):
 
 
 def policy_evaluation(mdp, policy):
+    assert np.all(policy.sum(1) == 1)
     ppi = np.einsum('ast,sa->st', mdp.P, policy)
     rpi = np.einsum('sa,sa->s', mdp.r, policy)
     vf = value_function(mdp, ppi, rpi)
@@ -31,7 +33,8 @@ def solve_mdp(mdp):
 
 
 def value_function(mdp, p_pi, r_pi):
-    I = np.eye(mdp.P.shape[-1])
+    num_states = mdp.P.shape[-1]
+    I = np.eye(num_states)
     vf = np.linalg.solve(I - mdp.discount * p_pi, r_pi)
     return vf
 
