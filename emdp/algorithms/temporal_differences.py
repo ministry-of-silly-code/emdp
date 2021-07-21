@@ -1,4 +1,7 @@
+import random
+
 import numpy as np
+import tqdm
 
 
 def sarsa(model, alpha=0.5, epsilon=0.1, maxiter=100, maxeps=1000):
@@ -87,118 +90,40 @@ def sarsa(model, alpha=0.5, epsilon=0.1, maxiter=100, maxeps=1000):
     return q, pi, state_counts
 
 
-def qlearning(env, alpha=0.5, epsilon=0.1, maxiter=100, maxeps=1000):
-    """
-    Solves the supplied environment using Q-learning.
+def qlearning(env, alpha=0.5, epsilon=0.1, max_samples=1000):
+    q = 0.00001 * np.random.rand(env.num_states, env.num_actions)
+    qmax = np.max(q, axis=1)
+    policy = np.argmax(q, axis=1)
 
-    Parameters
-    ----------
-    env : python object
-        Holds information about the environment to solve
-        such as the reward structure and the transition dynamics.
+    _ = env.reset()
+    state = env.current_state_idx
 
-    alpha : float
-        Algorithm learning rate. Defaults to 0.5.
+    for _ in tqdm.trange(max_samples, desc="q-learning"):
+        if random.random() < epsilon:
+            action = random.randrange(0, env.num_actions)
+        else:
+            action = policy[state]
 
-    epsilon : float
-         Probability that a random action is selected. epsilon must be
-         in the interval [0,1] where 0 means that the action is selected
-         in a completely greedy manner and 1 means the action is always
-         selected randomly.
+        _, reward, done, _ = env.step(int(action))
+        next_state = env.current_state_idx
 
-    maxiter : int
-        The maximum number of iterations to perform per episode.
-        Defaults to 100.
+        future_value = qmax[next_state]
 
-    maxeps : int
-        The number of episodes to run SARSA for.
-        Defaults to 1000.
+        discounted_future_value = env.discount * future_value
+        old_q = q[state, action]
+        delta_Q = reward + discounted_future_value - old_q
+        new_q = old_q + alpha * delta_Q
 
-    Returns
-    -------
-    q : numpy array of shape (N, 1)
-        The state-action value for the environment where N is the
-        total number of states
+        q[state, action] = new_q
 
-    pi : numpy array of shape (N, 1)
-        Optimal policy for the environment where N is the total
-        number of states.
+        if new_q > qmax[state]:
+            qmax[state] = new_q
+            policy[state] = action
 
-    state_counts : numpy array of shape (N, 1)
-        Counts of the number of times each state is visited
-    """
-
-    Q = np.zeros((env.num_states, env.num_actions))
-
-    for i in range(maxeps):
-
-        if np.mod(i, 1000) == 0:
-            print("Running episode %i." % i)
-
-        # for each new episode, start at the given start state
-        state = int(env.start_state_seq)
-
-        for j in range(maxiter):
-            # sample first e-greedy action
-            action = sample_action(Q, state, env.num_actions, epsilon)
-            # initialize p and r
-            p, r = 0, np.random.random()
-
-            # sample the next state according to the action and the
-            # probability of the transition
-            for next_state in range(env.num_states):
-                p += env.P[state, next_state, action]
-                if r <= p:
-                    break
-
-            # Calculate the temporal difference and update Q function
-            Q[state, action] += alpha * (env.R[state] + env.gamma * np.max(Q[next_state, :]) - Q[state, action])
-
-            # count the state visits
-            state_counts[state] += 1
-
-            # Store the previous state
+        if done:
+            _ = env.reset()
+            state = env.current_state_idx
+        else:
             state = next_state
-            # End episode is state is a terminal state
-            if np.any(state == env.goal_states_seq):
-                break
 
-    # determine the q function and policy
-    q = np.max(Q, axis=1).reshape(-1, 1)
-    pi = np.argmax(Q, axis=1).reshape(-1, 1)
-
-    return q, pi
-
-
-def sample_action(Q, state, num_actions, epsilon):
-    """
-    Epsilon greedy action selection.
-
-    Parameters
-    ----------
-    Q : numpy array of shape (N, 1)
-        Q function for the environment where N is the total number of states.
-
-    state : int
-        The current state.
-
-    num_actions : int
-        The number of actions.
-
-    epsilon : float
-         Probability that a random action is selected. epsilon must be
-         in the interval [0,1] where 0 means that the action is selected
-         in a completely greedy manner and 1 means the action is always
-         selected randomly.
-
-    Returns
-    -------
-    action : int
-        Number representing the selected action between 0 and num_actions.
-    """
-    if np.random.random() < epsilon:
-        action = np.random.randint(0, num_actions)
-    else:
-        action = np.argmax(Q[state, :])
-
-    return action
+    return q

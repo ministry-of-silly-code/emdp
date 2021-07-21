@@ -4,7 +4,7 @@ from . import utils
 from .exceptions import InvalidActionError, EpisodeDoneError
 
 
-class Env(object):
+class Env:
     """
     Abstract Environment wrapper.
     """
@@ -53,13 +53,13 @@ class MDP(Env):
 
     def reset(self):
         integer_representation = np.random.choice(np.arange(self.num_states), p=self.initial_state)
-        self.current_state = utils.convert_int_rep_to_onehot(integer_representation, self.num_states)
-        self.done = False
+        self.set_state(integer_representation)
+        self.requires_reset = False
         return self.current_state
 
     def set_current_state_to(self, state):
-        self.current_state = utils.convert_int_rep_to_onehot(state, self.num_states)
-        self.done = False
+        self.set_state(state)
+        self.requires_reset = False
         return self.current_state
 
     def step(self, action) -> np.float32:
@@ -79,16 +79,11 @@ class MDP(Env):
         if self.current_state.argmax() in self.terminal_states:
             self.done = True
 
-        # get the vector representing the next state probabilities:
-        current_state_idx = utils.convert_onehot_to_int(self.current_state)
-        next_state_probs = self.transition[current_state_idx, action]
+        reward = self.reward[self.current_state_idx, action]
+        next_state_probs = self.transition[self.current_state_idx, action]
 
-        # sample the next state
         sampled_next_state = self.rng.choice(np.arange(self.num_states), p=next_state_probs)
-        # observe the reward
-        reward = self.reward[current_state_idx, action]
-
-        self.current_state = utils.convert_int_rep_to_onehot(sampled_next_state, self.num_states)
+        self.set_state(sampled_next_state)
 
         return self.current_state, reward, self.done, {'gamma': self.discount}
 

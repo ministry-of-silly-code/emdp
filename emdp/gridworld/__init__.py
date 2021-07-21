@@ -1,6 +1,3 @@
-"""
-A simple grid world environment
-"""
 import random
 
 import gym.spaces
