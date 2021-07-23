@@ -21,12 +21,13 @@ class HierarchicalEnvironment(emdp.MDP):
         assert isinstance(action, int)
 
         if action >= self.nr_primitive_actions:
+            option_idx = action - self.nr_primitive_actions
             state = self.last_state
             terminal = False
             total_reward = 0.
             # TODO:
             while not terminal:
-                action_distribution = self.options[action, state]
+                action_distribution = self.options[option_idx, state]
                 actions = np.arange(len(action_distribution))
                 action_distribution = np.asarray(action_distribution)
                 primitive_action = np.random.choice(actions, p=action_distribution)
