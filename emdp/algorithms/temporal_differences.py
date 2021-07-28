@@ -92,6 +92,7 @@ def sarsa(model, alpha=0.5, epsilon=0.1, maxiter=100, maxeps=1000):
 
 def qlearning(env, alpha=0.5, epsilon=0.1, max_samples=1000, show_progress=False):
     q = 0.00001 * np.random.rand(env.num_states, env.num_actions)
+    visitation_counts = np.zeros((env.num_states, env.num_actions))
     qmax = np.max(q, axis=1)
     policy = np.argmax(q, axis=1)
 
@@ -115,6 +116,7 @@ def qlearning(env, alpha=0.5, epsilon=0.1, max_samples=1000, show_progress=False
         new_q = old_q + alpha * delta_Q
 
         q[state, action] = new_q
+        visitation_counts[state, action] += 1
 
         if new_q > qmax[state]:
             qmax[state] = new_q
@@ -128,4 +130,4 @@ def qlearning(env, alpha=0.5, epsilon=0.1, max_samples=1000, show_progress=False
 
     greedy_policy = np.zeros_like(q)
     greedy_policy[range(greedy_policy.shape[0]), policy] = 1.
-    return greedy_policy
+    return greedy_policy, visitation_counts

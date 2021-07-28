@@ -2,12 +2,13 @@ import random
 
 import numpy as np
 
-import emdp
+
+import emdp.gridworld
 
 
-class HierarchicalEnvironment(emdp.MDP):
+class HierarchicalEnvironment(emdp.gridworld.GridWorldMDP):
     def __init__(self, mdp, options, option_termination):
-        super().__init__(mdp.transition, mdp.reward, mdp.discount, mdp.initial_state, mdp.terminal_states)
+        super().__init__(initial_states=mdp.initial_states, goals=mdp.goals, seed=mdp.initial_seed)
         self.nr_primitive_actions = self.num_actions
         self.num_actions = self.num_actions + len(options)
         self.options = options
@@ -37,7 +38,7 @@ class HierarchicalEnvironment(emdp.MDP):
                 total_reward += reward
 
                 if random.random() < self.option_termination:
-                    terminal = True
+                    break
 
             # TODO: should this be discounted?
             reward = total_reward
