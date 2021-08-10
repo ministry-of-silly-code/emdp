@@ -157,7 +157,7 @@ class GridWorldMDP(MDP):
                 ax.quiver(c[pos], r[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=1.0)
 
         else:
-            best_actions = data_unreachable.argmax(axis=1)
+            best_actions = data_reachable.argmax(axis=1)
             sizes = 24 * data_reachable[range(data_reachable.shape[0]), best_actions]
             for idx, (a, size) in enumerate(zip(best_actions, sizes)):
                 if size > 1:
