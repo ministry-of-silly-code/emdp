@@ -162,6 +162,8 @@ class GridWorldMDP(MDP):
             for idx, (a, size) in enumerate(zip(best_actions, sizes)):
                 if size > 1:
                     r_, c_ = r[idx], c[idx]
+                    if a < 4:
+                        a = emdp.actions.ACTIONS_HUMAN[a]
                     ax.text(c_, r_, a, size=size)
 
         tag = f"{title}"
