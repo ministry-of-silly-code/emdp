@@ -129,7 +129,6 @@ class GridWorldMDP(MDP):
         self._set_gridworld_frame(ax)
 
         if num_actions == 4:
-            assert num_actions == 4
             direction = np.zeros((num_actions, 2))
             direction[emdp.actions.UP] = emdp.actions.UP_vec
             direction[emdp.actions.DOWN] = emdp.actions.DOWN_vec

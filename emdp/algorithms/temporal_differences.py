@@ -99,7 +99,7 @@ def qlearning(env, alpha=0.5, epsilon=0.1, max_samples=1000, show_progress=False
     _ = env.reset()
     state = env.current_state_idx
 
-    for _ in tqdm.trange(max_samples, desc="q-learning", disable=not show_progress):
+    for _step in tqdm.trange(max_samples, desc="q-learning", disable=not show_progress):
         if random.random() < epsilon:
             action = random.randrange(0, env.num_actions)
         else:
