@@ -24,8 +24,9 @@ class HierarchicalEnvironment(emdp.gridworld.GridWorldMDP):
 
     def step(self, action):
         assert isinstance(action, int)
-        if self.use_primitives:
+        if not self.use_primitives:
             action += self.num_primitive_actions
+            self.num_actions += self.num_primitive_actions
 
         if action >= self.num_primitive_actions:
             option_idx = action - self.num_primitive_actions
@@ -53,6 +54,10 @@ class HierarchicalEnvironment(emdp.gridworld.GridWorldMDP):
             state = state_vec.argmax()
 
         self.last_state = state
+
+        if not self.use_primitives:
+            self.num_actions -= self.num_primitive_actions
+
         return state_vec, reward, terminal, info
 
     def reset(self):
