@@ -12,17 +12,12 @@ class TransitionMatrixBuilder(object):
     Builder object to build a transition matrix for a grid world
     """
 
-    def __init__(self, grid_size, action_space, terminal_states, p_success):
-        self.terminal_states = terminal_states
+    def __init__(self, grid_size, action_space, p_success):
         self.grid_size = grid_size
         self.action_space = action_space
         self.state_space = grid_size * grid_size
-        self._P = np.zeros((self.state_space, self.action_space, self.state_space))
-        self._P = np.zeros((self.state_space, self.action_space, self.state_space))
         self.grid_added = False
-        self.P_modified = False
-        # self.p_success = p_success
-        self._P = build_simple_grid(size=self.grid_size, p_success=p_success, terminal_states=self.terminal_states)
+        self.P = build_simple_grid(size=self.grid_size, p_success=p_success)
 
     def add_wall_at(self, tuple_location):
         """
@@ -34,49 +29,36 @@ class TransitionMatrixBuilder(object):
         target_state = target_state.argmax()
         # find all the ways to go to "target_state"
         # from_states contains states that can lead you to target_state by executing from_action
-        from_states, from_actions = np.where(self._P[:, :, target_state] != 0)
+        from_states, from_actions = np.where(self.P[:, :, target_state] != 0)
 
         # get the transition probability distributions that go from s--> t via some action
-        transition_probs_from = self._P[from_states, from_actions, :]
+        transition_probs_from = self.P[from_states, from_actions, :]
         # TODO: optimize this loop
         for i, from_state in enumerate(from_states):  # enumerate over states
             tmp = transition_probs_from[i, target_state]  # get the prob of transitioning
             transition_probs_from[i, target_state] = 0  # set it to zero
             transition_probs_from[i, from_state] += tmp  # add the transition prob to staying in the same place
 
-        self._P[from_states, from_actions, :] = transition_probs_from
+        self.P[from_states, from_actions, :] = transition_probs_from
 
         # Get the probability of going to any state for all actions from target_state.
-        transition_probs_from_wall = self._P[target_state, :, :]
+        transition_probs_from_wall = self.P[target_state, :, :]
         for i, probs_from_action in enumerate(transition_probs_from_wall):
             # Reset the probabilities.
             transition_probs_from_wall[i, :] = 0.0
             # Set the probability of going to the target state to be 1.0
             transition_probs_from_wall[i, target_state] = 1.0
         # Now set the probs of going to any state from target state as above (i.e only targets).
-        self._P[target_state, :, :] = transition_probs_from_wall
+        self.P[target_state, :, :] = transition_probs_from_wall
 
         # renormalize and update transition matrix.
-        normalization = self._P.sum(2)
+        normalization = self.P.sum(2)
         # normalization[normalization == 0] = 1
         normalization = 1 / normalization
-        self._P = (self._P * np.repeat(normalization, self._P.shape[0]).reshape(*self._P.shape))
+        self.P = (self.P * np.repeat(normalization, self.P.shape[0]).reshape(*self.P.shape))
 
-        assert np.allclose(self._P.sum(2), 1), 'Normalization did not occur correctly: {}'.format(self._P.sum(2))
-        assert np.allclose(self._P[target_state, :, target_state], 1.0), 'All actions from wall should lead to wall!'
-        self._P_modified = True
-
-    @property
-    def P(self, nocopy=False):
-        """
-        Returns a new array with the transition matrix built so far.
-        :param nocopy:
-        :return:
-        """
-        if nocopy:
-            return self._P
-        else:
-            return self._P.copy()
+        assert np.allclose(self.P.sum(2), 1), 'Normalization did not occur correctly: {}'.format(self.P.sum(2))
+        assert np.allclose(self.P[target_state, :, target_state], 1.0), 'All actions from wall should lead to wall!'
 
     def add_wall_between(self, start, end):
         """
@@ -182,5 +164,4 @@ Simple builders for gridworlds
 #     p0 = np.zeros(P.shape[0])
 #     p0[start_state] = 1
 #
-#     return GridWorldMDP(P, R, gamma, p0, terminal_states=[], size=size, seed=seed)
 #

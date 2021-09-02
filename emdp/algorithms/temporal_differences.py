@@ -90,7 +90,7 @@ def sarsa(model, alpha=0.5, epsilon=0.1, maxiter=100, maxeps=1000):
     return q, pi, state_counts
 
 
-def qlearning(env, alpha=0.5, epsilon=0.1, max_samples=1000, show_progress=False):
+def qlearning(env, max_samples, alpha=0.5, epsilon=0.1, show_progress=False):
     q = 0.00001 * np.random.rand(env.num_states, env.num_actions)
     visitation_counts = np.zeros((env.num_states, env.num_actions))
     qmax = np.max(q, axis=1)
@@ -99,7 +99,9 @@ def qlearning(env, alpha=0.5, epsilon=0.1, max_samples=1000, show_progress=False
     _ = env.reset()
     state = env.current_state_idx
 
-    for _step in tqdm.trange(max_samples, desc="q-learning", disable=not show_progress):
+    samples = 0
+    pbar = tqdm.tqdm(max_samples, desc="q-learning", disable=not show_progress)
+    while (samples + env.num_steps) < max_samples:
         if random.random() < epsilon:
             action = random.randrange(0, env.num_actions)
         else:
@@ -123,6 +125,8 @@ def qlearning(env, alpha=0.5, epsilon=0.1, max_samples=1000, show_progress=False
             policy[state] = action
 
         if done:
+            samples += env.num_steps
+            pbar.update(env.num_steps)
             _ = env.reset()
             state = env.current_state_idx
         else:

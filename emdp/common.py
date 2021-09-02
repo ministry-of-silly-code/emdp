@@ -1,7 +1,12 @@
+import collections
+
 import numpy as np
 
 from . import utils
 from .exceptions import InvalidActionError, EpisodeDoneError
+
+MDP_ = collections.namedtuple("MDP", "P r discount s0")
+MDPs_ = collections.namedtuple("MDP", "P rs discount s0")
 
 
 class Env:
@@ -36,7 +41,7 @@ class MDP(Env):
 
         self.transition = transition
         self.reward = reward
-        self.num_states, self.num_actions, _ = transition.shape
+        self.num_states, self.num_actions, _next_states = transition.shape
 
         assert np.allclose(transition.sum(axis=2), 1), 'Transition matrix does not seem to be a stochastic matrix (i.e. the sum over states for each action doesn not equal 1'
         assert self.num_states == transition.shape[2], '3rd Dimension of Transition Matrix is not of size |S|'
@@ -48,13 +53,22 @@ class MDP(Env):
         self.initial_state = initial_state
         self.terminal_states = terminal_states
         self.current_state = None
-        self.done = None
-        self.reset()
+        self.num_steps = None
+        self.current_state_idx = None
+        self.requires_reset = True
+
+    def mdp(self):
+        return MDP_(self.transition, self.reward, self.discount, self.initial_state)
+
+    def set_state(self, state_idx):
+        self.current_state_idx = state_idx
+        self.current_state = utils.convert_int_rep_to_onehot(state_idx, self.num_states)
 
     def reset(self):
         integer_representation = np.random.choice(np.arange(self.num_states), p=self.initial_state)
         self.set_state(integer_representation)
         self.requires_reset = False
+        self.num_steps = 0
         return self.current_state
 
     def set_current_state_to(self, state):
@@ -62,12 +76,12 @@ class MDP(Env):
         self.requires_reset = False
         return self.current_state
 
-    def step(self, action) -> np.float32:
+    def step(self, action):
         """
         :param action: An integer representing the action taken.
         :return:
         """
-        if self.done:
+        if self.requires_reset:
             raise EpisodeDoneError('The episode has terminated. Use .reset() to restart the episode.')
         if action >= self.num_actions or not isinstance(action, int):
             raise InvalidActionError('Invalid action {}. It must be an integer between 0 and {}'.format(action, self.num_actions - 1))
@@ -77,15 +91,16 @@ class MDP(Env):
         # because we can only give the reward after leaving
         # a terminal state.
         if self.current_state.argmax() in self.terminal_states:
-            self.done = True
+            self.requires_reset = True
 
         reward = self.reward[self.current_state_idx, action]
         next_state_probs = self.transition[self.current_state_idx, action]
 
         sampled_next_state = self.rng.choice(np.arange(self.num_states), p=next_state_probs)
         self.set_state(sampled_next_state)
+        self.num_steps += 1
 
-        return self.current_state, reward, self.done, {'gamma': self.discount}
+        return self.current_state, reward, self.requires_reset, {'gamma': self.discount}
 
     def torch(self):
         import torch
@@ -158,3 +173,6 @@ class MultiTaskMDP(Env):
         self.current_state = utils.convert_int_rep_to_onehot(sampled_next_state, self.num_states)
 
         return self.current_state, reward, self.done, {'gamma': self.discount}
+
+    def mdps(self):
+        return MDPs_(self.transition, self.rewards, self.discount, self.initial_state)

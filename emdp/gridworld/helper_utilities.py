@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..actions import LEFT, RIGHT, UP, DOWN
+from .. import actions
 from ..exceptions import InvalidActionError
 
 n_actions = 4
@@ -34,15 +34,24 @@ def get_state_after_executing_action(action, state, grid_size):
     :param grid_size:
     :return:
     """
+    ds = np.array([grid_size, 1])
+
     if check_can_take_action(action, state, grid_size):
-        if action == LEFT:
-            return state - 1
-        elif action == RIGHT:
-            return state + 1
-        elif action == UP:
-            return state - grid_size
-        elif action == DOWN:
-            return state + grid_size
+        if action == actions.LEFT:
+            t = state + ds.dot(actions.LEFT_rc)
+            assert (state - 1) == t
+        elif action == actions.RIGHT:
+            t = state + ds.dot(actions.RIGHT_rc)
+            assert (state + 1) == t
+        elif action == actions.UP:
+            t = state + ds.dot(actions.UP_rc)
+            assert t == (state - grid_size)
+        elif action == actions.DOWN:
+            t = state + ds.dot(actions.DOWN_rc)
+            assert t == (state + grid_size)
+        else:
+            raise ValueError
+        return t
     else:
         # cant execute action, stay in the same place.
         return state
@@ -61,16 +70,16 @@ def check_can_take_action(action, state, grid_size):
     LEFT_EDGE = list(range(0, grid_size * grid_size, grid_size))
     RIGHT_EDGE = list(range(grid_size - 1, grid_size * grid_size, grid_size))
 
-    if action == DOWN:
+    if action == actions.DOWN:
         if state in LAST_ROW:
             return False
-    elif action == RIGHT:
+    elif action == actions.RIGHT:
         if state in RIGHT_EDGE:
             return False
-    elif action == UP:
+    elif action == actions.UP:
         if state in FIRST_ROW:
             return False
-    elif action == LEFT:
+    elif action == actions.LEFT:
         if state in LEFT_EDGE:
             return False
     else:
@@ -91,15 +100,15 @@ def get_possible_actions(state, grid_size):
     LEFT_EDGE = list(range(0, grid_size * grid_size, grid_size))
     RIGHT_EDGE = list(range(grid_size - 1, grid_size * grid_size, grid_size))
 
-    available_actions = [LEFT, RIGHT, UP, DOWN]
+    available_actions = actions.ACTIONS_ORDER.copy()
     if state in LAST_ROW:
-        available_actions.remove(DOWN)
+        available_actions.remove(actions.DOWN)
     if state in FIRST_ROW:
-        available_actions.remove(UP)
+        available_actions.remove(actions.UP)
     if state in RIGHT_EDGE:
-        available_actions.remove(RIGHT)
+        available_actions.remove(actions.RIGHT)
     if state in LEFT_EDGE:
-        available_actions.remove(LEFT)
+        available_actions.remove(actions.LEFT)
     return available_actions
 
 
@@ -110,7 +119,7 @@ def get_possible_actions(state, grid_size):
 #     one_hot[idx] = 1
 #     return one_hot
 
-def build_simple_grid(size=5, terminal_states=[], p_success=1):
+def build_simple_grid(size=5, p_success=1):
     """
     Builds a simple grid where an agent can move LEFT, RIGHT, UP or DOWN
     and actions success with probability p_success.
@@ -119,26 +128,19 @@ def build_simple_grid(size=5, terminal_states=[], p_success=1):
 
     Moving into walls does nothing.
     :param size: size of the grid world
-    :param terminal_state: the location of terminal states: a list of (x, y) tuples
     :param p_success: the probabilty that an action will be successful.
     :return:
     """
     p_fail = 1 - p_success
 
     n_states = size * size
-    grid_states = n_states  # the number of entries of the state vector
-    # corresponding to the grid itself.
-    terminal_states = list(map(lambda tupl: int(size * tupl[0] + tupl[1]), terminal_states))
 
     # this helper function creates the state transition list for
     # taking an action in a state
     def create_state_list_for_action(state_idx, action):
         transition_probs = np.zeros(n_states)
-        if state_idx in terminal_states:
-            # no matter what action you take you should go to the absorbing state
-            transition_probs[state_idx] = 1
 
-        elif action in [LEFT, RIGHT, UP, DOWN]:
+        if action in actions.ACTIONS_ORDER:
             # valid action, now see if we can actually execute this action
             # in this state:
             # TODO: distinguish between capability of slipping and taking wrong action vs failing to execute action.

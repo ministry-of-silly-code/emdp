@@ -15,8 +15,10 @@ from ..common import MDP
 
 
 class GridWorldMDP(MDP):
-    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337):
+    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True):
         assert (goal and not goals) or (not goal and goals)
+        if goal:
+            goals = [goal, ]
 
         if ascii_room is None:
             ascii_room = """
@@ -29,62 +31,58 @@ class GridWorldMDP(MDP):
             #       #
             #   #   #
             #########"""[1:].split('\n')
-        ascii_room = [row.strip() for row in ascii_room]
-
-        terminal_states = (goal,)
+        if strip:
+            ascii_room = [row.strip() for row in ascii_room]
         char_matrix = txt_utilities.get_char_matrix(ascii_room)
-        grid_size = len(char_matrix[0])
-        builder = builder_tools.TransitionMatrixBuilder(
-            grid_size=grid_size,
-            action_space=4,
-            terminal_states=terminal_states,
-            p_success=1.
-        )
-
+        self.size = len(char_matrix[0])
         walls, empty_coords = txt_utilities.ascii_to_walls(char_matrix)  # hacks
         self.reachable_states_idx = []
         for e in empty_coords:
-            (e,), = flatten_state(e, grid_size, grid_size * grid_size).nonzero()
+            (e,), = flatten_state(e, self.size, self.size * self.size).nonzero()
             self.reachable_states_idx.append(e)
 
-        for (r, c) in walls:
-            builder.add_wall_at((r, c))
+        self.goals = goals
+        self.initial_states = initial_states
+        self.walls = walls
+        self.num_states = self.size * self.size
 
-        reward = np.zeros(builder.P.shape[:2], dtype=np.float32)
-
-        idx = lambda r, c: flatten_state((r, c), builder.grid_size, builder.P.shape[0]).argmax()
-
-        # left = np.array(goal) + emdp.actions.LEFT_vec
-        # right = np.array(goal) + emdp.actions.RIGHT_vec
-        # up = np.array(goal) + emdp.actions.UP_vec
-        # down = np.array(goal) + emdp.actions.DOWN_vec
-        # reward[idx(*left), emdp.actions.RIGHT] = 1
-        # reward[idx(*right), emdp.actions.LEFT] = 1
-        # reward[idx(*up), emdp.actions.DOWN] = 1
-        # reward[idx(*down), emdp.actions.UP] = 1
-
-        reward[idx(*goal), :] = 1
-
-        initial_state_distr = np.zeros(reward.shape[0])
-
-        if initial_states is None:
-            initial_state_distr[self.reachable_states_idx] = 1 / len(self.reachable_states_idx)
+        self.initial_state_distr = np.zeros(self.num_states)
+        if self.initial_states is None:
+            self.initial_state_distr[self.reachable_states_idx] = 1 / len(self.reachable_states_idx)
         else:
-            for e in initial_states:
-                (e,), = flatten_state(e, grid_size, grid_size * grid_size).nonzero()
-                initial_state_distr[e] = 1 / len(initial_states)
+            for e in self.initial_states:
+                (e,), = flatten_state(e, self.size, self.size * self.size).nonzero()
+                self.initial_state_distr[e] = 1 / len(self.initial_states)
 
-        discount, size = 0.9, builder.grid_size
+        self.goal = random.choice(self.goals)
+        reward, terminal_states, transition = self.rebuild_mdp()
 
-        terminal_states = list(map(lambda tupl: int(size * tupl[0] + tupl[1]), terminal_states))
-        self.size = size
-        super().__init__(builder.P, reward, discount, initial_state_distr, terminal_states, seed=seed)
+        self.initial_seed = seed
+        super().__init__(transition, reward, 0.9, self.initial_state_distr, terminal_states, seed=seed)
         self.action_space = gym.spaces.Discrete(self.num_actions)
-        self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,))
+        self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,), dtype=float)
+        self.reset()
 
-    # def reset(self):
-    #     super().reset()
-    #     return self.current_state
+    def rebuild_mdp(self):
+        terminal_states = (self.goal,)
+        builder = builder_tools.TransitionMatrixBuilder(
+            grid_size=self.size,
+            action_space=4,
+            p_success=1.
+        )
+        for (r, c) in self.walls:
+            builder.add_wall_at((r, c))
+        reward = np.zeros(builder.P.shape[:2], dtype=np.float32)
+        # idx = lambda r, c: flatten_state((r, c), self.size, builder.P.shape[0]).argmax()
+        reward[self.flatten_state(self.goal).argmax(), :] = 1
+        terminal_states = list(map(lambda tupl: int(self.size * tupl[0] + tupl[1]), terminal_states))
+        return reward, terminal_states, builder.P
+
+    def reset(self):
+        self.goal = random.choice(self.goals)
+        self.reward, self.terminal_states, self.transition = self.rebuild_mdp()
+        super().reset()
+        return self.current_state
 
     def flatten_state(self, state):
         """Flatten state (x,y) into a one hot vector"""
@@ -106,6 +104,8 @@ class GridWorldMDP(MDP):
         It is useful to see all the probabilities assigned to the four possible actions in each state """
 
         assert data.shape[0] == self.num_states  # self.num_actions
+        assert len(data.shape) == 2
+
         data_reachable = np.zeros_like(data)
         scale = np.abs(data).max()
 
@@ -130,14 +130,14 @@ class GridWorldMDP(MDP):
 
         if num_actions == 4:
             direction = np.zeros((num_actions, 2))
-            direction[emdp.actions.UP] = emdp.actions.UP_vec
-            direction[emdp.actions.DOWN] = emdp.actions.DOWN_vec
-            direction[emdp.actions.LEFT] = emdp.actions.LEFT_vec
-            direction[emdp.actions.RIGHT] = emdp.actions.RIGHT_vec
+            direction[emdp.actions.LEFT] = emdp.actions.LEFT_xy
+            direction[emdp.actions.RIGHT] = emdp.actions.RIGHT_xy
+            direction[emdp.actions.UP] = emdp.actions.UP_xy
+            direction[emdp.actions.DOWN] = emdp.actions.DOWN_xy
 
-            for (r_, c_), a in zip(direction, range(num_actions)):
-                base = (r_, -c_)
-                quivers = np.einsum("d,m->md", base, data_unreachable[:, a])
+            for (x, y), a in zip(direction, emdp.actions.ACTIONS_ORDER):
+                base_xy = (x, -y)
+                quivers = np.einsum("d,m->md", base_xy, data_unreachable[:, a])
 
                 pos = data_unreachable[:, a] > 0
                 ax.quiver(c[pos], r[pos], *quivers[pos].T, units='xy', scale=2.0, color='g', alpha=0.1)
@@ -145,15 +145,17 @@ class GridWorldMDP(MDP):
                 pos = data_unreachable[:, a] < 0
                 ax.quiver(c[pos], r[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=0.1)
 
-            for (r_, c_), a in zip(direction, range(num_actions)):
-                base = (r_, -c_)  # TODO: WHY is the flip necessary?
-                quivers = np.einsum("d,m->md", base, data_reachable[:, a])
+            for (x, y), a in zip(direction, range(num_actions)):
+                base_xy = (x, -y) # :(
+                quivers = np.einsum("d,m->md", base_xy, data_reachable[:, a])
 
                 pos = data_reachable[:, a] > 0
-                ax.quiver(c[pos], r[pos], *quivers[pos].T, units='xy', scale=2.0, color='g', alpha=1.0)
+                U, V = quivers[pos][:, 0], quivers[pos][:, 1]
+                ax.quiver(c[pos], r[pos], U, V, units='xy', scale=2.0, color='g', alpha=1.0)
 
                 pos = data_reachable[:, a] < 0
-                ax.quiver(c[pos], r[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=1.0)
+                U, V = -quivers[pos][:, 0], -quivers[pos][:, 1]
+                ax.quiver(c[pos], r[pos], U, V, units='xy', scale=2.0, color='r', alpha=1.0)
 
         else:
             best_actions = data_reachable.argmax(axis=1)
@@ -175,16 +177,16 @@ class GridWorldMDP(MDP):
 
     def _set_gridworld_frame(self, ax):
         num_cols, num_rows = self.size, self.size
-        x0, x1, y0, y1 = (0, 0, 0, 0)
-        # set axis limits / ticks / etc... so we have a nice grid overlay
-        ax.set_xlim((x0 - 0.5, num_cols - x1 - 0.5))
-        ax.set_ylim((y0 - 0.5, num_rows - y1 - 0.5)[::-1])
+        ax.set_xlim((-0.5, num_cols - 0.5))
+        ax.set_ylim((-0.5, num_rows - 0.5)[::-1])
+
         # major ticks
-        ax.set_xticks(np.arange(x0, num_cols - x1, 1))
-        ax.xaxis.set_tick_params(labelsize=5)
-        ax.set_yticks(np.arange(y0, num_rows - y1, 1))
-        ax.yaxis.set_tick_params(labelsize=5)
-        # minor ticks
+        ax.set_xticks(np.arange(0, num_cols, 1))
+        ax.xaxis.set_tick_params(labelsize=10)
+        ax.set_yticks(np.arange(0., num_rows, 1))
+        ax.yaxis.set_tick_params(labelsize=10)
+
+        # # minor ticks
         ax.set_xticks(np.arange(*ax.get_xlim(), 1), minor=True)
         ax.set_yticks(np.arange(*ax.get_ylim()[::-1], 1), minor=True)
         ax.grid(which='minor', color='gray', linestyle='-', linewidth=1)

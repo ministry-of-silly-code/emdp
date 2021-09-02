@@ -19,6 +19,13 @@ class HierarchicalEnvironment(emdp.gridworld.GridWorldMDP):
         self.option_termination = option_termination
         self.last_state = None
 
+    @property
+    def mdp(self):
+        if self.use_primitives:
+            return self._mdp
+        else:
+            return self._mdp
+
     def is_option(self, action):
         return action >= self.num_primitive_actions
 
