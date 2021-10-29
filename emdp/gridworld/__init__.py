@@ -15,6 +15,8 @@ from ..common import MDP
 
 
 class GridWorldMDP(MDP):
+    rewarding_action = emdp.actions.RIGHT
+
     def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True):
         assert (goal and not goals) or (not goal and goals)
         if goal:
@@ -74,7 +76,7 @@ class GridWorldMDP(MDP):
             builder.add_wall_at((r, c))
         reward = np.zeros(builder.P.shape[:2], dtype=np.float32)
         # idx = lambda r, c: flatten_state((r, c), self.size, builder.P.shape[0]).argmax()
-        reward[self.flatten_state(self.goal).argmax(), :] = 1
+        reward[self.flatten_state(self.goal).argmax(), self.rewarding_action] = 1
         terminal_states = list(map(lambda tupl: int(self.size * tupl[0] + tupl[1]), terminal_states))
         return reward, terminal_states, builder.P
 
