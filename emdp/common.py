@@ -25,14 +25,14 @@ class Env:
 
 
 class MDP(Env):
-    def __init__(self, transition, reward, discount, initial_state, terminal_states, seed=1337):
+    def __init__(self, transition, reward, discount, initial_state, terminal_matrix, seed=1337):
         """
         A simple MDP simulator.
         :param transition: The transition matrix of size |S|x|A|x|S|
         :param reward: The reward criterion |S|x|A|
         :param discount: the discount factor.
         :param initial_state: the distribution over starting states |S| (must sum to 1.)
-        :param terminal_states: A list of integers which indicate terminal states, used to end episodes.
+        :param terminal_matrix: A list of integers which indicate terminal states, used to end episodes.
                                 Note that in the transition matrix these
                                 should be absorbing states to ensure calculations are correct.
         :param seed: the random seed for simulations.
@@ -51,7 +51,7 @@ class MDP(Env):
 
         self.discount = discount
         self.initial_state = initial_state
-        self.terminal_states = terminal_states
+        self.terminal_matrix = terminal_matrix
         self.current_state = None
         self.num_steps = None
         self.current_state_idx = None
@@ -90,7 +90,9 @@ class MDP(Env):
         # this check is done after entering terminal state
         # because we can only give the reward after leaving
         # a terminal state.
-        if self.current_state.argmax() in self.terminal_states:
+
+        # self.current_state.argmax()
+        if self.terminal_matrix[self.current_state_idx, action]:
             self.requires_reset = True
 
         reward = self.reward[self.current_state_idx, action]

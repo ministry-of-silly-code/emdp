@@ -51,4 +51,4 @@ def build_cake_world_mdp(epsilon, discount, cake_reward=1.0):
 
     p0 = np.array([1.0, 0.0])
 
-    return MDP(P, R, discount, initial_state=p0, terminal_states=[x2])
+    return MDP(P, R, discount, initial_state=p0, terminal_matrix=[x2])

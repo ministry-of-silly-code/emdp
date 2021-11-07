@@ -57,4 +57,4 @@ def build_two_circle_MDP(discount=0.6, good_reward=10., distractor_reward=5.):
     p0 = np.zeros(STATES)
     p0[A] = 1.
 
-    return MDP(P, R, gamma, initial_state=p0, terminal_states=[])
+    return MDP(P, R, gamma, initial_state=p0, terminal_matrix=[])

@@ -16,7 +16,7 @@ class MultiObjectiveGridWorldMDP(emdp.MDP):
         self.gws = gws
         self.current_gw = gws[0]
         self.num_tasks = len(gws)
-        super().__init__(g0.transition, rewards, g0.discount, g0.initial_state, terminal_states=g0.terminal_states)
+        super().__init__(g0.transition, rewards, g0.discount, g0.initial_state, terminal_matrix=g0.terminal_states)
 
     @property
     def observation_space(self):

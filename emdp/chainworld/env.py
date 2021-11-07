@@ -7,7 +7,7 @@ from ..common import MDP
 class ChainMDP(MDP):
     num_actions = 2
 
-    def __init__(self, num_states, reward_spec, p_success=1, starting_distribution=None, terminal_states=(), discount=0.9):
+    def __init__(self, num_states, reward_spec, p_success=1, starting_distribution=None, terminal_matrix=(), discount=0.9):
         """
             A simple chain world with states and 2 actions.
             Actions can fail with probability 1-p_success
@@ -33,7 +33,7 @@ class ChainMDP(MDP):
             :param reward_spec: a list of tuples which represent
             (location_of_reward, magnitude_of_reward)
             :param starting_distribution: a distribution over starting states.
-            :param terminal_states: a list of integers representing the terminal states
+            :param terminal_matrix: a list of integers representing the terminal states
             :param return_MDP: returns an MDP object, else will return the components to create one.
             :return:
 
@@ -52,7 +52,7 @@ class ChainMDP(MDP):
         # building the transition matrix.
         transition = np.zeros((num_states, self.num_actions, num_states))
         for s in range(num_states):
-            if s in terminal_states:
+            if s in terminal_matrix:
                 # whatever action we take from this state should end up in this state again
                 transition[s, :, s] = 1
             else:
@@ -79,4 +79,4 @@ class ChainMDP(MDP):
         for (reward_loc, action, reward_mag) in reward_spec:
             reward[reward_loc, action] = reward_mag  # any action at this position leads to a reward.
 
-        super(ChainMDP, self).__init__(transition, reward, discount, starting_distribution, terminal_states, seed=1337)
+        super(ChainMDP, self).__init__(transition, reward, discount, starting_distribution, terminal_matrix, seed=1337)

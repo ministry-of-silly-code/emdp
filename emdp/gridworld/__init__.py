@@ -77,8 +77,9 @@ class GridWorldMDP(MDP):
         reward = np.zeros(builder.P.shape[:2], dtype=np.float32)
         # idx = lambda r, c: flatten_state((r, c), self.size, builder.P.shape[0]).argmax()
         reward[self.flatten_state(self.goal).argmax(), self.rewarding_action] = 1
-        terminal_states = list(map(lambda tupl: int(self.size * tupl[0] + tupl[1]), terminal_states))
-        return reward, terminal_states, builder.P
+        # terminal_states = list(map(lambda tupl: int(self.size * tupl[0] + tupl[1]), terminal_states))
+        terminal_matrix = reward == 1
+        return reward, terminal_matrix, builder.P
 
     def reset(self):
         self.goal = random.choice(self.goals)

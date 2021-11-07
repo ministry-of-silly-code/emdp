@@ -82,7 +82,7 @@ def build_twostate_MDP():
     R[0, 1] = 10
     R[1, 2] = -1
 
-    return MDP(P, R, gamma, initial_state=np.array([0.5, 0.5]), terminal_states=[])
+    return MDP(P, R, gamma, initial_state=np.array([0.5, 0.5]), terminal_matrix=[])
 
 
 _EXAMPLE_FOUR_ROOMS_TXT = """#############
