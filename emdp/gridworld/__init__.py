@@ -176,6 +176,7 @@ class GridWorldMDP(MDP):
             title += f"_{scale:.4f}"
 
         ax.set_title(title, fontdict={'fontsize': 8, 'fontweight': 'medium'})
+        figure.tight_layout()
         return tag, figure
 
     def _set_gridworld_frame(self, ax):
@@ -214,6 +215,10 @@ class GridWorldMDP(MDP):
         ax.imshow(vf, origin='lower')
         ax.set_aspect(1)
 
+        scale = np.abs(vf).max()
+        title += f"_{scale:.4f}"
+        ax.set_title(title, fontdict={'fontsize': 8, 'fontweight': 'medium'})
+        figure.tight_layout()
         return title, figure
 
     def plot_trajectories(self, title, policy, num_trajectories=10, jitter_scale=1.):
