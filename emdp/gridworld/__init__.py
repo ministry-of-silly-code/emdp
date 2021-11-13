@@ -216,8 +216,7 @@ class GridWorldMDP(MDP):
         ax.set_aspect(1)
 
         scale = np.abs(vf).max()
-        title += f"_{scale:.4f}"
-        ax.set_title(title, fontdict={'fontsize': 8, 'fontweight': 'medium'})
+        ax.set_title(f"{title}_{scale:.4f}", fontdict={'fontsize': 8, 'fontweight': 'medium'})
         figure.tight_layout()
         return title, figure
 
