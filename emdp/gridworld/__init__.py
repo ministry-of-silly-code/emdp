@@ -16,11 +16,14 @@ from ..common import MDP
 
 class GridWorldMDP(MDP, gym.Env):
     rewarding_action = emdp.actions.RIGHT
+    discount = 0.9
 
-    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True):
+    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True, smooth_reward=False):
         assert (goal and not goals) or (not goal and goals)
         if goal:
             goals = [goal, ]
+
+        self.smooth_reward = smooth_reward
 
         if ascii_room is None:
             ascii_room = """
@@ -60,7 +63,7 @@ class GridWorldMDP(MDP, gym.Env):
         reward, terminal_states, transition = self.rebuild_mdp()
 
         self.initial_seed = seed
-        super().__init__(transition, reward, 0.9, self.initial_state_distr, terminal_states, seed=seed)
+        super().__init__(transition, reward, self.discount, self.initial_state_distr, terminal_states, seed=seed)
         self.action_space = gym.spaces.Discrete(self.num_actions)
         self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,), dtype=float)
         self.reset()
@@ -74,11 +77,18 @@ class GridWorldMDP(MDP, gym.Env):
         )
         for (r, c) in self.walls:
             builder.add_wall_at((r, c))
+
         reward = np.zeros(builder.P.shape[:2], dtype=np.float32)
-        # idx = lambda r, c: flatten_state((r, c), self.size, builder.P.shape[0]).argmax()
         reward[self.flatten_state(self.goal).argmax(), self.rewarding_action] = 1
-        # terminal_states = list(map(lambda tupl: int(self.size * tupl[0] + tupl[1]), terminal_states))
         terminal_matrix = reward == 1
+
+        if self.smooth_reward:
+            I = np.eye(builder.P.shape[0])
+            successor_features = np.linalg.inv(I - self.discount * builder.P.mean(1))
+            reward = successor_features @ reward
+            reward = reward.astype(np.float32)
+        # idx = lambda r, c: flatten_state((r, c), self.size, builder.P.shape[0]).argmax()
+        # terminal_states = list(map(lambda tupl: int(self.size * tupl[0] + tupl[1]), terminal_states))
         return reward, terminal_matrix, builder.P
 
     def reset(self):
