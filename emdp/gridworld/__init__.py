@@ -14,7 +14,7 @@ from .helper_utilities import flatten_state, unflatten_state
 from ..common import MDP
 
 
-class GridWorldMDP(MDP):
+class GridWorldMDP(MDP, gym.Env):
     rewarding_action = emdp.actions.RIGHT
 
     def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True):
