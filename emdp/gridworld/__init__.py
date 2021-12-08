@@ -18,12 +18,10 @@ class GridWorldMDP(MDP, gym.Env):
     rewarding_action = emdp.actions.RIGHT
     discount = 0.9
 
-    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True, smooth_reward=False):
+    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True):
         assert (goal and not goals) or (not goal and goals)
         if goal:
             goals = [goal, ]
-
-        self.smooth_reward = smooth_reward
 
         if ascii_room is None:
             ascii_room = """
@@ -81,14 +79,6 @@ class GridWorldMDP(MDP, gym.Env):
         reward = np.zeros(builder.P.shape[:2], dtype=np.float32)
         reward[self.flatten_state(self.goal).argmax(), self.rewarding_action] = 1
         terminal_matrix = reward == 1
-
-        if self.smooth_reward:
-            I = np.eye(builder.P.shape[0])
-            successor_features = np.linalg.inv(I - self.discount * builder.P.mean(1))
-            reward = successor_features @ reward
-            reward = reward.astype(np.float32)
-        # idx = lambda r, c: flatten_state((r, c), self.size, builder.P.shape[0]).argmax()
-        # terminal_states = list(map(lambda tupl: int(self.size * tupl[0] + tupl[1]), terminal_states))
         return reward, terminal_matrix, builder.P
 
     def reset(self):
