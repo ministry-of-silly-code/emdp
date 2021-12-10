@@ -118,7 +118,7 @@ class GridWorldMDP(MDP, gym.Env):
         data_unreachable[self.reachable_states_idx, :] = 0.
         del data
 
-        if scale_data:
+        if scale_data and scale != 0:
             data_reachable = data_reachable / (scale * 1.1)
             data_unreachable = np.clip(data_unreachable / (scale * 1.1), -1, 1)
 
