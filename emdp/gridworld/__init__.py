@@ -17,6 +17,7 @@ from ..common import MDP
 class GridWorldMDP(MDP, gym.Env):
     rewarding_action = emdp.actions.RIGHT
     discount = 0.9
+    metadata = {"render.modes": []}
 
     def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True):
         assert (goal and not goals) or (not goal and goals)
