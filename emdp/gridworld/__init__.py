@@ -110,13 +110,12 @@ class GridWorldMDP(MDP, gym.Env):
         assert len(data.shape) == 2
 
         data_reachable = np.zeros_like(data)
-        scale = np.abs(data).max()
-
         data_unreachable = np.copy(data)
 
         data_reachable[self.reachable_states_idx, :] = data[self.reachable_states_idx, :]
         data_unreachable[self.reachable_states_idx, :] = 0.
         del data
+        scale = np.abs(data_reachable).max()
 
         if scale_data and scale != 0:
             data_reachable = data_reachable / (scale * 1.1)
@@ -176,6 +175,7 @@ class GridWorldMDP(MDP, gym.Env):
             title += f"_{scale:.4f}"
 
         ax.set_title(title, fontdict={'fontsize': 8, 'fontweight': 'medium'})
+        ax.legend()
         figure.tight_layout()
         return tag, figure
 
