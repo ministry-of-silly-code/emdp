@@ -1,3 +1,3 @@
 from .common import MDP, MultiTaskMDP, MDP_, MDPs_
 
-__version__ = '0.0.8'
+__version__ = '0.0.9'

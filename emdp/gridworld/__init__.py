@@ -149,7 +149,7 @@ class GridWorldMDP(MDP, gym.Env):
                 ax.quiver(c[pos], r[pos], *-quivers[pos].T, units='xy', scale=2.0, color='r', alpha=0.1)
 
             for (x, y), a in zip(direction, range(num_actions)):
-                base_xy = (x, -y) # :(
+                base_xy = (x, -y)  # :(
                 quivers = np.einsum("d,m->md", base_xy, data_reachable[:, a])
 
                 pos = data_reachable[:, a] > 0
@@ -196,10 +196,12 @@ class GridWorldMDP(MDP, gym.Env):
         ax.grid(which='minor', color='gray', linestyle='-', linewidth=1)
         ax.set_aspect(1)
 
-    def plot_s(self, title, vf):
+    def plot_s(self, title, vf, vmin=0, vmax=1):
         x0, x1, y0, y1 = 0, 0, 0, 0
         vf = vf.reshape(self.size, self.size)
         num_cols, num_rows = vf.shape
+        vmin = min(vmin, vf.min())
+        vmax = max(vmax, vf.max())
 
         figure = plt.figure()
         ax = plt.gca()
@@ -212,7 +214,7 @@ class GridWorldMDP(MDP, gym.Env):
         ax.set_yticks(np.arange(y0, num_rows - y1, 1))
         ax.yaxis.set_tick_params(labelsize=5)
 
-        ax.imshow(vf, origin='lower')
+        ax.imshow(vf, origin='lower', vmin=vmin, vmax=vmax)
         ax.set_aspect(1)
 
         scale = np.abs(vf).max()
@@ -233,7 +235,7 @@ class GridWorldMDP(MDP, gym.Env):
 
             for _ in range(99):
                 a_distr = np.array(policy[state])
-                action = np.random.choice(self.num_actions, p=a_distr/a_distr.sum(-1))
+                action = np.random.choice(self.num_actions, p=a_distr / a_distr.sum(-1))
                 state_vec, reward, done, info = self.step(action)
                 state = state_vec.argmax()
                 trajectory.append(self.unflatten_state(state_vec))
