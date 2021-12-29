@@ -217,7 +217,6 @@ class GridWorldMDP(MDP, gym.Env):
 
         scale = np.abs(vf).max()
         ax.set_title(f"{title}_{scale:.4f}", fontdict={'fontsize': 8, 'fontweight': 'medium'})
-        ax.legend()
         figure.tight_layout()
         return title, figure
 
