@@ -46,6 +46,7 @@ class GridWorldMDP(MDP, gym.Env):
             self.reachable_states_idx.append(e)
 
         self.goals = goals
+        self.num_tasks = len(goals)
         self.initial_states = initial_states
         self.walls = walls
         self.num_states = self.size * self.size
