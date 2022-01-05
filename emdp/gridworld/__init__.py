@@ -59,8 +59,18 @@ class GridWorldMDP(MDP, gym.Env):
                 (e,), = flatten_state(e, self.size, self.size * self.size).nonzero()
                 self.initial_state_distr[e] = 1 / len(self.initial_states)
 
+        self.rewards, self.terminal_statess, self.transitions = [], [], []
+        for goal in goals:
+            reward, terminal_states, transition = self.rebuild_mdp(goal)
+            self.rewards.append(reward)
+            self.terminal_statess.append(terminal_states)
+            self.transitions.append(transition)
+
         self.goal = random.choice(self.goals)
-        reward, terminal_states, transition = self.rebuild_mdp()
+        goal_idx = self.goals.index(self.goal)
+        self.reward = self.rewards[goal_idx]
+        self.transition = self.transitions[goal_idx]
+        self.terminal_states = self.terminal_statess[goal_idx]
 
         self.initial_seed = seed
         super().__init__(transition, reward, self.discount, self.initial_state_distr, terminal_states, seed=seed)
@@ -68,8 +78,8 @@ class GridWorldMDP(MDP, gym.Env):
         self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,), dtype=float)
         self.reset()
 
-    def rebuild_mdp(self):
-        terminal_states = (self.goal,)
+    def rebuild_mdp(self, goal):
+        terminal_states = (goal,)
         builder = builder_tools.TransitionMatrixBuilder(
             grid_size=self.size,
             action_space=4,
@@ -79,13 +89,17 @@ class GridWorldMDP(MDP, gym.Env):
             builder.add_wall_at((r, c))
 
         reward = np.zeros(builder.P.shape[:2], dtype=np.float32)
-        reward[self.flatten_state(self.goal).argmax(), self.rewarding_action] = 1
+        reward[self.flatten_state(goal).argmax(), self.rewarding_action] = 1
         terminal_matrix = reward == 1
         return reward, terminal_matrix, builder.P
 
     def reset(self):
         self.goal = random.choice(self.goals)
-        self.reward, self.terminal_states, self.transition = self.rebuild_mdp()
+        goal_idx = self.goals.index(self.goal)
+
+        self.reward = self.rewards[goal_idx]
+        self.transition = self.transitions[goal_idx]
+        self.terminal_states = self.terminal_statess[goal_idx]
         super().reset()
         return self.current_state
 
