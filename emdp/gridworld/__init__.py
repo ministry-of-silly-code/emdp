@@ -308,3 +308,9 @@ class GridWorldMDP(MDP, gym.Env):
 
     def seed(self, seed):
         self.set_seed(seed)
+
+    def force_task(self, forced_task_idx):
+        self.goal = self.goals[forced_task_idx]
+        self.reward, self.terminal_matrix, self.transition = self.rebuild_mdp()
+        super().reset()
+        return self.current_state
