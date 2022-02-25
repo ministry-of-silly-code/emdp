@@ -1,5 +1,6 @@
 from setuptools import setup, find_packages
-from emdp import __version__
+
+__version__ = '0.0.11'
 
 base_requirements = ['numpy>=1.9.1']
 extras = {
