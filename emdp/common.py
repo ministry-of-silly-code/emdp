@@ -25,7 +25,7 @@ class Env:
 
 
 class MDP(Env):
-    def __init__(self, transition, reward, discount, initial_state, terminal_matrix, seed=1337):
+    def __init__(self, transition, reward, discount, initial_state, terminal_matrix, seed=1337, max_steps=100):
         """
         A simple MDP simulator.
         :param transition: The transition matrix of size |S|x|A|x|S|
@@ -56,6 +56,7 @@ class MDP(Env):
         self.num_steps = None
         self.current_state_idx = None
         self.requires_reset = True
+        self.max_steps = max_steps
 
     def mdp(self):
         return MDP_(self.transition, self.reward, self.discount, self.initial_state)
@@ -69,6 +70,9 @@ class MDP(Env):
         self.set_state(integer_representation)
         self.requires_reset = False
         self.num_steps = 0
+        return self.observation()
+
+    def observation(self):
         return self.current_state
 
     def set_current_state_to(self, state):
@@ -83,6 +87,10 @@ class MDP(Env):
         """
         if self.requires_reset:
             raise EpisodeDoneError('The episode has terminated. Use .reset() to restart the episode.')
+
+        if np.issubdtype(action, np.integer):
+            action = int(action)
+
         if action >= self.num_actions or not isinstance(action, int):
             raise InvalidActionError('Invalid action {}. It must be an integer between 0 and {}'.format(action, self.num_actions - 1))
 
@@ -92,17 +100,21 @@ class MDP(Env):
         # a terminal state.
 
         # self.current_state.argmax()
-        if self.terminal_matrix[self.current_state_idx, action]:
+        if self.terminal_matrix[self.current_state_idx, action] or self.num_steps == self.max_steps:
             self.requires_reset = True
 
         reward = self.reward[self.current_state_idx, action]
+
+        if reward != 0 and not self.requires_reset:
+            raise ValueError
+
         next_state_probs = self.transition[self.current_state_idx, action]
 
         sampled_next_state = self.rng.choice(np.arange(self.num_states), p=next_state_probs)
         self.set_state(sampled_next_state)
         self.num_steps += 1
 
-        return self.current_state, reward, self.requires_reset, {'gamma': self.discount}
+        return self.observation(), reward, self.requires_reset, {'gamma': self.discount}
 
     def torch(self):
         import torch
@@ -114,7 +126,7 @@ class MDP(Env):
 
 
 class MultiTaskMDP(Env):
-    def __init__(self, transition, rewards, discount, initial_state, terminal_states, seed=1337):
+    def __init__(self, transition, rewards, discount, initial_state, terminal_matrix, seed=1337):
         super().__init__(seed)
 
         self.transition = transition
@@ -130,7 +142,7 @@ class MultiTaskMDP(Env):
 
         self.discount = discount
         self.initial_state = initial_state
-        self.terminal_states = terminal_states
+        self.terminal_matrix = terminal_matrix
         self.current_state = None
         self.done = None
         self.reset()
@@ -160,7 +172,8 @@ class MultiTaskMDP(Env):
         # this check is done after entering terminal state
         # because we can only give the reward after leaving
         # a terminal state.
-        if self.current_state.argmax() in self.terminal_states:
+        state = self.current_state.argmax()
+        if self.current_state.argmax() in self.terminal_matrix[state]:
             self.done = True
 
         # get the vector representing the next state probabilities:

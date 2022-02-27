@@ -13,13 +13,21 @@ from . import txt_utilities
 from .helper_utilities import flatten_state, unflatten_state
 from ..common import MDP
 
+TILE_PIXELS = 32
+
 
 class GridWorldMDP(MDP, gym.Env):
-    rewarding_action = emdp.actions.RIGHT
+    rewarding_action = [emdp.actions.RIGHT, emdp.actions.DOWN, emdp.actions.LEFT, emdp.actions.UP]
     discount = 0.9
-    metadata = {"render.modes": []}
+    metadata = {"render.modes": ["ansi", "rgb_array"]}
+    ansi_to_rgb = {
+        ' ': (255, 255, 255),
+        '#': (0, 0, 0),
+        'G': (0, 0, 255),
+        '@': (0, 255, 0),
+    }
 
-    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True):
+    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True, dict_observations=False, forced_goal=None):
         assert (goal and not goals) or (not goal and goals)
         if goal:
             goals = [goal, ]
@@ -37,6 +45,8 @@ class GridWorldMDP(MDP, gym.Env):
             #########"""[1:].split('\n')
         if strip:
             ascii_room = [row.strip() for row in ascii_room]
+        self.ascii_room = ascii_room
+        self.numpy_room = np.array([list(l) for l in self.ascii_room])
         char_matrix = txt_utilities.get_char_matrix(ascii_room)
         self.size = len(char_matrix[0])
         walls, empty_coords = txt_utilities.ascii_to_walls(char_matrix)  # hacks
@@ -45,7 +55,9 @@ class GridWorldMDP(MDP, gym.Env):
             (e,), = flatten_state(e, self.size, self.size * self.size).nonzero()
             self.reachable_states_idx.append(e)
 
+        self.forced_goal = forced_goal
         self.goals = goals
+
         self.num_tasks = len(goals)
         self.initial_states = initial_states
         self.walls = walls
@@ -59,27 +71,39 @@ class GridWorldMDP(MDP, gym.Env):
                 (e,), = flatten_state(e, self.size, self.size * self.size).nonzero()
                 self.initial_state_distr[e] = 1 / len(self.initial_states)
 
-        self.rewards, self.terminal_statess, self.transitions = [], [], []
+        self.rewards, self.terminal_matrices, self.transitions = [], [], []
         for goal in goals:
-            reward, terminal_states, transition = self.rebuild_mdp(goal)
+            reward, terminal_matrix, transition = self.rebuild_mdp(goal)
             self.rewards.append(reward)
-            self.terminal_statess.append(terminal_states)
+            self.terminal_matrices.append(terminal_matrix)
             self.transitions.append(transition)
 
-        self.goal = random.choice(self.goals)
+        self.goal = self.pick_goal()
         goal_idx = self.goals.index(self.goal)
         self.reward = self.rewards[goal_idx]
         self.transition = self.transitions[goal_idx]
-        self.terminal_states = self.terminal_statess[goal_idx]
+        self.terminal_matrix = self.terminal_matrices[goal_idx]
 
         self.initial_seed = seed
-        super().__init__(transition, reward, self.discount, self.initial_state_distr, terminal_states, seed=seed)
+        self.dict_observations = dict_observations
+        super().__init__(transition, reward, self.discount, self.initial_state_distr, terminal_matrix, seed=seed)
         self.action_space = gym.spaces.Discrete(self.num_actions)
-        self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,), dtype=float)
+        if dict_observations:
+            self.observation_space = gym.spaces.Dict({
+                'image': gym.spaces.Box(low=0, high=255, shape=(3, self.size, self.size), dtype="uint8"),
+                'task': gym.spaces.Box(low=0., high=1., shape=(self.num_tasks,), dtype=int),
+            })
+        else:
+            self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,), dtype=int)
         self.reset()
 
+    def pick_goal(self):
+        if self.forced_goal is not None:
+            return self.goals[self.forced_goal]
+        else:
+            return random.choice(self.goals)
+
     def rebuild_mdp(self, goal):
-        terminal_states = (goal,)
         builder = builder_tools.TransitionMatrixBuilder(
             grid_size=self.size,
             action_space=4,
@@ -94,14 +118,13 @@ class GridWorldMDP(MDP, gym.Env):
         return reward, terminal_matrix, builder.P
 
     def reset(self):
-        self.goal = random.choice(self.goals)
+        self.goal = self.pick_goal()
         goal_idx = self.goals.index(self.goal)
 
         self.reward = self.rewards[goal_idx]
         self.transition = self.transitions[goal_idx]
-        self.terminal_states = self.terminal_statess[goal_idx]
-        super().reset()
-        return self.current_state
+        self.terminal_matrix = self.terminal_matrices[goal_idx]
+        return super().reset()
 
     def flatten_state(self, state):
         """Flatten state (x,y) into a one hot vector"""
@@ -110,10 +133,6 @@ class GridWorldMDP(MDP, gym.Env):
     def unflatten_state(self, onehot):
         """Unflatten a one hot vector into a (x,y) pair"""
         return unflatten_state(onehot, self.size)
-
-    # def step(self, action):
-    #     state, reward, done, info = super().step(action)
-    #     return state, reward, done, info
 
     def set_current_state_to(self, tuple_state):
         return super().set_current_state_to(self.flatten_state(tuple_state).argmax())
@@ -314,3 +333,45 @@ class GridWorldMDP(MDP, gym.Env):
         self.reward, self.terminal_matrix, self.transition = self.rebuild_mdp()
         super().reset()
         return self.current_state
+
+    def render(self, mode='ansi'):
+        # self.plot_s(self.current_state)
+        room = self.numpy_room.copy()
+        (p0, p1) = self.unflatten_state(self.current_state)
+        room[self.goal[0]][self.goal[1]] = 'G'
+        room[p0][p1] = '@'
+        if mode == "ansi" or mode == "ascii":
+            return room
+        elif mode == "human":
+            print(room)
+        elif mode == "rgb_array":
+            # Turn the ansi room into a rgb array
+            room = np.array(list(map(lambda l: list(map(lambda c: self.ansi_to_rgb[c], l)), room)))
+            room = nn_resample(room, (self.size * TILE_PIXELS, self.size * TILE_PIXELS))
+            return room.astype(np.uint8)
+
+    def observation(self):
+        obs = super().observation()
+        if isinstance(self.observation_space, gym.spaces.Dict) and hasattr(self, 'goal'):
+            task_idx = np.eye(self.num_tasks)[self.goals.index(self.goal)]
+            room = self.numpy_room.copy()
+            (p0, p1) = self.unflatten_state(self.current_state)
+            room[p0][p1] = '@'
+            img_room = np.array(list(map(lambda l: list(map(lambda c: self.ansi_to_rgb[c], l)), room)))
+            img_room = np.transpose(img_room, (2, 0, 1))
+            return {
+                'task': task_idx,
+                'image': img_room,
+            }
+        else:
+            return obs
+
+
+# https://stackoverflow.com/questions/69728373/resize-1-channel-numpy-image-array-with-nearest-neighbour-interpolation
+def nn_resample(img, shape):
+    def per_axis(in_sz, out_sz):
+        ratio = 0.5 * in_sz / out_sz
+        return np.round(np.linspace(ratio - 0.5, in_sz - ratio - 0.5, num=out_sz)).astype(int)
+
+    return img[per_axis(img.shape[0], shape[0])[:, None],
+               per_axis(img.shape[1], shape[1])]
