@@ -341,8 +341,8 @@ class GridWorldMDP(MDP, gym.Env):
         # self.plot_s(self.current_state)
         room = self.numpy_room.copy()
         (p0, p1) = self.unflatten_state(self.current_state)
-        room[self.goal[0]][self.goal[1]] = 'G'
         room[p0][p1] = '@'
+        room[self.goal[0]][self.goal[1]] = 'G'
         if mode == "ansi" or mode == "ascii":
             return room
         elif mode == "human":
