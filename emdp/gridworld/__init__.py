@@ -27,7 +27,7 @@ class GridWorldMDP(MDP, gym.Env):
         '@': (0, 255, 0),
     }
 
-    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True, dict_observations=False, forced_goal=None):
+    def __init__(self, goal=None, initial_states=None, ascii_room=None, goals=None, seed=1337, strip=True, rgb_features=False, forced_goal=None):
         assert (goal and not goals) or (not goal and goals)
         if goal:
             goals = [goal, ]
@@ -85,16 +85,19 @@ class GridWorldMDP(MDP, gym.Env):
         self.terminal_matrix = self.terminal_matrices[goal_idx]
 
         self.initial_seed = seed
-        self.dict_observations = dict_observations
+        self.rgb_features = rgb_features
         super().__init__(transition, reward, self.discount, self.initial_state_distr, terminal_matrix, seed=seed)
         self.action_space = gym.spaces.Discrete(self.num_actions)
-        if dict_observations:
+        if rgb_features:
             self.observation_space = gym.spaces.Dict({
                 'image': gym.spaces.Box(low=0, high=255, shape=(3, self.size, self.size), dtype="uint8"),
                 'task': gym.spaces.Box(low=0., high=1., shape=(self.num_tasks,), dtype=int),
             })
         else:
-            self.observation_space = gym.spaces.Box(low=0., high=1., shape=(self.num_states,), dtype=int)
+            self.observation_space = gym.spaces.Dict({
+                'state': gym.spaces.Box(low=0., high=1., shape=(self.num_states,), dtype=int),
+                'task': gym.spaces.Box(low=0., high=1., shape=(self.num_tasks,), dtype=int),
+            })
         self.reset()
 
     def pick_goal(self):
@@ -352,19 +355,16 @@ class GridWorldMDP(MDP, gym.Env):
 
     def observation(self):
         obs = super().observation()
-        if isinstance(self.observation_space, gym.spaces.Dict) and hasattr(self, 'goal'):
-            task_idx = np.eye(self.num_tasks)[self.goals.index(self.goal)]
+        task_idx = np.eye(self.num_tasks)[self.goals.index(self.goal)]
+        if self.rgb_features:
             room = self.numpy_room.copy()
             (p0, p1) = self.unflatten_state(self.current_state)
             room[p0][p1] = '@'
             img_room = np.array(list(map(lambda l: list(map(lambda c: self.ansi_to_rgb[c], l)), room)))
             img_room = np.transpose(img_room, (2, 0, 1))
-            return {
-                'task': task_idx,
-                'image': img_room,
-            }
+            return {'task': task_idx, 'image': img_room, }
         else:
-            return obs
+            return {'task': task_idx, 'state': obs, }
 
 
 # https://stackoverflow.com/questions/69728373/resize-1-channel-numpy-image-array-with-nearest-neighbour-interpolation
