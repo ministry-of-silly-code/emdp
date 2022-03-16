@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = '0.0.11'
+__version__ = '0.0.12'
 
 base_requirements = ['numpy>=1.9.1']
 extras = {
