@@ -233,7 +233,7 @@ class GridWorldMDP(MDP, gym.Env):
         ax.grid(which='minor', color='gray', linestyle='-', linewidth=1)
         ax.set_aspect(1)
 
-    def plot_s(self, title, vf, vmin=0, vmax=1):
+    def plot_s(self, title, vf, vmin=-float("inf"), vmax=float("inf")):
         x0, x1, y0, y1 = 0, 0, 0, 0
         vf = vf.reshape(self.size, self.size)
         num_cols, num_rows = vf.shape
@@ -251,12 +251,14 @@ class GridWorldMDP(MDP, gym.Env):
         ax.set_yticks(np.arange(y0, num_rows - y1, 1))
         ax.yaxis.set_tick_params(labelsize=5)
 
-        ax.imshow(vf, origin='lower', vmin=vmin, vmax=vmax)
+        scale = np.abs(vf).max()
+
+        im = ax.imshow(vf, origin='lower', vmin=vmin, vmax=vmax)
         ax.set_aspect(1)
 
-        scale = np.abs(vf).max()
         ax.set_title(f"{title}_{scale:.4f}", fontdict={'fontsize': 8, 'fontweight': 'medium'})
         figure.tight_layout()
+        figure.colorbar(im)
         return title, figure
 
     def plot_trajectories(self, title, policy, num_trajectories=10, jitter_scale=1.):
