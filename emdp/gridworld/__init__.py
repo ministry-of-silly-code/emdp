@@ -233,12 +233,10 @@ class GridWorldMDP(MDP, gym.Env):
         ax.grid(which='minor', color='gray', linestyle='-', linewidth=1)
         ax.set_aspect(1)
 
-    def plot_s(self, title, vf, vmin=-float("inf"), vmax=float("inf")):
+    def plot_s(self, title, vf, vmin=None, vmax=None):
         x0, x1, y0, y1 = 0, 0, 0, 0
         vf = vf.reshape(self.size, self.size)
         num_cols, num_rows = vf.shape
-        vmin = min(vmin, vf.min())
-        vmax = max(vmax, vf.max())
 
         figure = plt.figure()
         ax = plt.gca()
