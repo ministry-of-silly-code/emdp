@@ -88,7 +88,7 @@ class MDP(Env):
         if self.requires_reset:
             raise EpisodeDoneError('The episode has terminated. Use .reset() to restart the episode.')
 
-        if np.issubdtype(action, np.integer):
+        if np.issubdtype(type(action), np.integer):
             action = int(action)
 
         if action >= self.num_actions or not isinstance(action, int):
