@@ -21,15 +21,21 @@ def expected_return(mdp, policy):
     return mdp.s0 @ vf
 
 
-def solve_mdp(mdp):
-    num_iters = 50
-    n_actions, n_states, _ = mdp.P.shape
+def solve_mdp(mdp, num_iters=100):
+    assert mdp.transition.shape == (mdp.num_states, mdp.num_actions, mdp.num_states), "MDP transition matrix must be (num_states, num_actions, num_states)"
+    assert (mdp.transition.sum(2) == 1).all(), "MDP transition matrix must be stochastic"
+
+    n_actions, n_states, _ = mdp.transition.shape
     qf = np.zeros((n_states, n_actions))
+    old_q = qf.copy()
     for _ in range(num_iters):
-        qf = mdp.R + mdp.discount * np.einsum('ast,t->sa', mdp.P, np.max(qf, axis=1))
+        qf = mdp.reward + mdp.discount * np.einsum('sat,t->sa', mdp.transition, np.max(qf, axis=1))
+        if np.allclose(qf, old_q):
+            break
+        old_q = qf.copy()
     vf = np.max(qf, axis=1)
     pi = np.argmax(qf, axis=1)
-    return pi
+    return pi, vf
 
 
 def value_function(mdp, p_pi, r_pi):

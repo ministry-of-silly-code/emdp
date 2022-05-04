@@ -1,3 +1,7 @@
+import numpy as np
+import emdp
+
+
 def dadashi_fig2d():
     """ Figure 2 d) of
     ''The Value Function Polytope in Reinforcement Learning''
@@ -10,4 +14,4 @@ def dadashi_fig2d():
     """
     P = np.array([[[0.7, 0.3], [0.2, 0.8]], [[0.99, 0.01], [0.99, 0.01]]])
     R = np.array(([[-0.45, -0.1], [0.5, 0.5]]))
-    return MDP(P, R, 0.9)
+    return emdp.MDP(P, R, 0.9, initial_state=np.ones(2) / 2, terminal_matrix=np.zeros((2, 2)))
