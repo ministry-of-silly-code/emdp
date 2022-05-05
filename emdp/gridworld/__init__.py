@@ -2,6 +2,7 @@ import random
 
 import gym.spaces
 import matplotlib.pyplot as plt
+import networkx as nx
 import numpy as np
 import tqdm
 
@@ -291,6 +292,41 @@ class GridWorldMDP(MDP, gym.Env):
             ax.plot(c, r)
 
         return title, figure
+
+    def plot_ss(self, title, matrix, min_weight=0.01):
+        assert matrix.shape == (self.num_states, self.num_states)
+
+        matrix[abs(matrix) < min_weight] = 0
+        edges = []
+        for s, t in np.argwhere(matrix):
+            edge_weight = matrix[s, t]
+            edge = (s, t, float(f"{str(edge_weight)[:4]}"))
+            edges.append(edge)
+
+        G = nx.MultiDiGraph()
+        G.add_weighted_edges_from(edges)
+
+        pos = {}
+        for s in range(matrix.shape[1]):
+            r, c = emdp.gridworld.helper_utilities.state_to_xy(s, self.size)
+            pos[s] = c, -r
+        from matplotlib.colors import colorConverter
+        old_cc = colorConverter.to_rgba_array
+
+        def sup(edge_color, alpha):
+            a = old_cc(edge_color, 1.)
+            a[:, -1] = alpha
+            return a
+
+        colorConverter.to_rgba_array = sup
+        nx.draw_networkx_edges(
+            G, pos, connectionstyle="arc3,rad=0.1",
+            alpha=[min(float(e[-1]), 1.) for e in edges],
+            edge_color=[(0, 0, 0) for e in edges],
+            width=0.5,
+        )
+        nx.draw_networkx_labels(G, pos)
+        plt.title(f"{title}")
 
     def enjoy_policy(self, policy, title):
         raise NotImplementedError
