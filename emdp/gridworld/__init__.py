@@ -2,7 +2,6 @@ import random
 
 import gym.spaces
 import matplotlib.pyplot as plt
-import networkx as nx
 import numpy as np
 import tqdm
 
@@ -261,6 +260,7 @@ class GridWorldMDP(MDP, gym.Env):
         return title, figure
 
     def plot_trajectories(self, title, policy, num_trajectories=10, jitter_scale=1.):
+        import networkx as nx
         figure = plt.figure()
         ax = plt.gca()
         self._set_gridworld_frame(ax)
