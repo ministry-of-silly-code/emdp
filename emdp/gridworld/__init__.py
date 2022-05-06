@@ -295,6 +295,7 @@ class GridWorldMDP(MDP, gym.Env):
 
     def plot_ss(self, title, matrix, min_weight=0.01):
         assert matrix.shape == (self.num_states, self.num_states)
+        import networkx as nx
 
         matrix[abs(matrix) < min_weight] = 0
         edges = []
